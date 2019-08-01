@@ -7,8 +7,12 @@ import numpy as np
 import pickle
 import os
 from pathlib import Path
-from utils import make_save_dir
 tqdm.pandas()
+
+def make_save_dir(save_dir):
+    if save_dir != None:
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
 
 def prepare_dataset(info_dir):
     df = pd.read_csv(info_dir)

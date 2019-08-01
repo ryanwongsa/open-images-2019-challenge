@@ -59,8 +59,8 @@ hyper_params = {
 
     # training parameters
     "epochs": 1,
-    "checkpoint_dir": "temp2/final.pth",
-    "save_dir": None, #"temp2",
+    "checkpoint_dir": None, #"temp2/final.pth",
+    "save_dir": "temp",
 
     # evaluation parameters
     "cls_thresh":0.05, 
