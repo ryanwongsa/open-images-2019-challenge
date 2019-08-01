@@ -56,6 +56,8 @@ class Trainer(object):
                 device=self.device,
                 idx_to_names=self.idx_to_names
             )
+            print("Loss:",average_loss)
+            print("mAp:", mAp)
         save_components(self.model, self.optimizer, self.scheduler, self.save_dir)
         return self.model, mAp, dict_aps, average_loss
     
