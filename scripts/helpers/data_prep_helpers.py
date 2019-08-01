@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 import os
 from pathlib import Path
-
+from utils import make_save_dir
 tqdm.pandas()
 
 def prepare_dataset(info_dir):
@@ -27,10 +27,6 @@ def load_data_format(name, loc_dir):
     idx_to_id = pickle.load(open(loc_dir+"/"+name+'-idx_to_id.pkl','rb'))
     json_r = json.loads(open(loc_dir+"/"+name+"-anno.json",'r').read())
     return json_r, idx_to_id
-
-def make_save_dir(save_dir):
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
 
 def make_class_descriptions(descriptions_dir, save_dir):
     make_save_dir(save_dir)

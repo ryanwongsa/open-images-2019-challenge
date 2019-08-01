@@ -20,10 +20,13 @@ class ClassificationSubnet(nn.Module):
         
     def init_weights(self, prior):
         for layer in [self.conv1, self.conv2, self.conv3, self.conv4, self.conv5]:
-            layer.weight.data.normal_(0, 0.01)
+            # layer.weight.data.normal_(0, 0.01)
             if layer == self.conv5:
                 layer.bias.data.fill_(-math.log((1.0-prior)/prior))
+                layer.weight.data.fill_(0)
             else:
+                n = layer.kernel_size[0] * layer.kernel_size[1] * layer.out_channels
+                layer.weight.data.normal_(0, math.sqrt(2. / n))
                 layer.bias.data.fill_(0.0)
         
     def forward(self, x):

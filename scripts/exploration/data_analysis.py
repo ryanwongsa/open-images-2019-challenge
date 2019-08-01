@@ -8,12 +8,9 @@ import os
 
 from collections import defaultdict
 from tqdm import tqdm as tqdm
+from utils import make_save_dir
 
 sns.set(color_codes=True)
-
-def make_save_dir(save_dir):
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
 
 def reject_outliers_index(data, m=2):
     return abs(data - np.mean(data)) < m * np.std(data)

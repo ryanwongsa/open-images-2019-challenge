@@ -15,8 +15,12 @@ class RegressionSubnet(nn.Module):
                                 
     def init_weights(self):
         for layer in [self.conv1, self.conv2, self.conv3, self.conv4]:
-            layer.weight.data.normal_(0, 0.01)
+            n = layer.kernel_size[0] * layer.kernel_size[1] * layer.out_channels
+            layer.weight.data.normal_(0, math.sqrt(2. / n))
             layer.bias.data.fill_(0.0)
+
+        self.output.weight.data.fill_(0)
+        self.output.bias.data.fill_(0)
             
     def forward(self, x):
         out = F.relu(self.conv1(x))

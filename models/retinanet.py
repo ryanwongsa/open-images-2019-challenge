@@ -31,16 +31,23 @@ class RetinaNet(nn.Module):
         self.regressionModel = RegressionSubnet(feature_size, num_anchors=self.num_anchors, feature_size=feature_size)
         self.classificationModel = ClassificationSubnet(feature_size, num_anchors=self.num_anchors, num_classes=num_classes, prior=prior, feature_size=feature_size)
         
-        self.freeze_bn = True
-        
-    def train(self, mode=True):
-        super(RetinaNet, self).train(mode)
+        self.freeze_bn = freeze_bn
         if self.freeze_bn:
-            for m in self.modules():
-                if isinstance(m, nn.BatchNorm2d):
-                    m.eval()
-                    m.weight.requires_grad = False
-                    m.bias.requires_grad = False
+            self.init_freeze_bn()
+
+    def init_freeze_bn(self):
+        '''Freeze BatchNorm layers.'''
+        for layer in self.modules():
+            if isinstance(layer, nn.BatchNorm2d):
+                layer.eval()
+    # def train(self, mode=True):
+    #     super(RetinaNet, self).train(mode)
+    #     if self.freeze_bn:
+    #         for m in self.modules():
+    #             if isinstance(m, nn.BatchNorm2d):
+    #                 m.eval()
+    #                 m.weight.requires_grad = False
+    #                 m.bias.requires_grad = False
                         
     def forward(self, x):
         

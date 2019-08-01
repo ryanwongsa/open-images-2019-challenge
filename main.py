@@ -5,9 +5,12 @@ from dataloader import get_dataloader
 from preprocess import transformer, img_transform, reverse_img_transform
 from models import RetinaNet
 from loss import FocalLoss
-from train import trainer
+from train import Trainer, load_components
 from inference import InferenceTransform
-from utils import Visualiser, support_evaluate_model, save_results_as_csv
+from utils import Visualiser, support_evaluate_model, save_results_as_csv, evaluate_model
+import pickle
+import gc
+gc.collect(2)
 
 dir_params = {
     "train_images_dir": "dataset/validation",
@@ -32,8 +35,8 @@ hyper_params = {
     "img_dim": 512,
 
     # anchor parameters
-    "ratios": [0.5, 1, 2],
-    "scales": [1, 2 ** (-2.0 / 3.0), 2 ** (2.0 / 3.0)],
+    "ratios": [1/3, 1/2, 1, 2],
+    "scales": [0.25, 1, 2],
 
     # network parameters
     "backbone": "resnet50",
@@ -55,9 +58,9 @@ hyper_params = {
     "decay_factor": 0.3,
 
     # training parameters
-    "epochs": 1000,
-    "checkpoint_dir": None, # "temp/final.pth",
-    "save_dir": "temp",
+    "epochs": 1,
+    "checkpoint_dir": "temp2/final.pth",
+    "save_dir": None, #"temp2",
 
     # evaluation parameters
     "cls_thresh":0.05, 
@@ -117,6 +120,14 @@ retinanet = RetinaNet(
     )
 retinanet.to(hyper_params["device"])
 
+# TODO: Move this over to training file
+def set_parameter_requires_grad(model):
+    for name, param in model.named_parameters():
+        if (name.split('.')[0]) not in ["fpn", "regressionModel", "classificationModel"]:
+            param.requires_grad = False
+
+set_parameter_requires_grad(retinanet)
+
 ### ================================= LOSS ============================
 criterion = FocalLoss(
         hyper_params["alpha"], 
@@ -128,7 +139,7 @@ criterion = FocalLoss(
     )
 
 ### ================================= OPTIMIZER ============================
-optimizer = optim.SGD(retinanet.parameters(), lr=hyper_params["lr"])
+optimizer = optim.SGD(retinanet.parameters(), lr=hyper_params["lr"]) # TODO: add weight decay
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
         mode='min', 
         factor=hyper_params['decay_factor'], 
@@ -137,27 +148,54 @@ scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,
         min_lr=hyper_params["min_lr"]
     )
 
+### ============================== LOAD CHECKPOINT ============================
+load_components(retinanet, optimizer, scheduler, hyper_params["checkpoint_dir"])
+
 ### ================================= TRAINER ============================
-retinanet = trainer(retinanet, 
-        train_dl, 
-        valid_dl, 
-        optimizer, 
-        scheduler, 
-        criterion, 
-        hyper_params["epochs"], 
-        hyper_params["device"],
-        hyper_params["checkpoint_dir"],
-        hyper_params["save_dir"],
-    )
-
-### =============================== EVALUATION ==========================
-
+print(hyper_params["device"])
 inferencer = InferenceTransform(
         dir_params["clsids_to_idx_dir"], 
         dir_params["clsids_to_names_dir"], 
         hyper_params["regress_factor"], 
         hyper_params["device"]
     ) 
+
+eval_params = {
+    "overlap":hyper_params["overlap"],
+    "top_k":hyper_params["top_k"],
+    "cls_thresh":hyper_params["cls_thresh"]
+}
+
+trainer = Trainer(
+        retinanet, 
+        train_dl, 
+        valid_dl, 
+        optimizer, 
+        scheduler, 
+        criterion, 
+        hyper_params["device"],
+        hyper_params["save_dir"],
+        dir_params["clsids_to_names_dir"], 
+        dir_params["clsids_to_idx_dir"], 
+        inferencer, 
+        hyper_params["num_classes"],
+        eval_params
+    )
+
+trainer.train(hyper_params["epochs"])
+
+# retinanet = trainer(retinanet, 
+#         train_dl, 
+#         valid_dl, 
+#         optimizer, 
+#         scheduler, 
+#         criterion, 
+#         hyper_params["epochs"], 
+#         hyper_params["device"],
+#         hyper_params["save_dir"],
+#     )
+
+# ### =============================== EVALUATION ==========================
 
 vis = Visualiser(
         hyper_params["num_classes"],
@@ -166,18 +204,19 @@ vis = Visualiser(
         reverse_img_transform
     )
 
-list_results = support_evaluate_model(retinanet, 
-        valid_dl, 
-        inferencer, 
-        vis, 
-        hyper_params["cls_thresh"], 
-        hyper_params["hasNMS"], 
-        hyper_params["overlap"], 
-        hyper_params["top_k"], 
-        hyper_params["device"], 
-        hyper_params["save_dir"],
-        display = True, 
-        create_result= True,
-    )
+# list_results = support_evaluate_model(retinanet, 
+#         valid_dl, 
+#         inferencer, 
+#         vis, 
+#         hyper_params["cls_thresh"], 
+#         hyper_params["hasNMS"], 
+#         hyper_params["overlap"], 
+#         hyper_params["top_k"], 
+#         hyper_params["device"], 
+#         hyper_params["save_dir"],
+#         display = True, 
+#         create_result= True,
+#     )
 
-save_results_as_csv(list_results, hyper_params["save_dir"]+"/results.csv")
+# TODO: create test set to save the results of that instead
+# save_results_as_csv(list_results, hyper_params["save_dir"]+"/results.csv")
