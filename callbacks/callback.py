@@ -23,6 +23,9 @@ class Callback(object):
     def on_epoch_start(self, data_dict):
         print("Started Epoch:", data_dict["epoch"])
         self.start = time.time()
+
+    def on_end_train_epoch(self, data_dict):
+        print("Ended Train Epoch in (hours):", time.time() - self.start)/3600.0)
     
     def on_batch_end(self, data_dict):
         if (data_dict["batch_num"]%10 == 0):

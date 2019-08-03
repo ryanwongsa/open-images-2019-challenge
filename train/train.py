@@ -12,6 +12,7 @@ from evaluation import calcMAp, compute_ap
 # from apex import amp
 import matplotlib.pyplot as plt
 import numpy as np
+import datetime
 
 class Trainer(object):
     def __init__(self, model, train_dataloader, test_dataloader, optimizer, scheduler, criterion, device, 
@@ -67,6 +68,7 @@ class Trainer(object):
             self.scheduler.step(epoch_loss/num_batches)
 
             self.model.eval()
+            self.cb.on_end_train_epoch({"epoch_num":i})
             mAp, dict_aps, eval_loss, display_imgs = self.evaluate()
             self.cb.on_end_epoch({"display_imgs":display_imgs,"mAp":mAp, "dict_aps":dict_aps, "eval_loss":eval_loss, "epoch_loss": epoch_loss, "epoch_num":i,"trainer":self})
             self.model.train()
@@ -80,8 +82,9 @@ class Trainer(object):
         tps, clas, p_scores = [], [], []
         classes, n_gts = torch.LongTensor(range(self.num_classes)), torch.zeros(self.num_classes).long()
         total_loss = 0
+        dl_len = len(self.test_dataloader)
         with torch.no_grad():
-            for img_ids, imgs, (target_bboxes, target_labels) in self.test_dataloader:
+            for dl_index, (img_ids, imgs, (target_bboxes, target_labels)) in enumerate(self.test_dataloader):
                 imgs, target_bboxes, target_labels = imgs.to(self.device), target_bboxes.to(self.device), target_labels.to(self.device)
                 batch_size, channels, height, width = imgs.shape
 
@@ -92,6 +95,10 @@ class Trainer(object):
                 total_loss += loss.cpu().detach().numpy()
 
                 list_transformed_anchors, list_classifications, list_scores = self.inferencer(imgs, classifications, regressions, anchors, cls_thresh=self.eval_params["cls_thresh"])
+                
+                if dl_index % 10 == 0:
+                    print("[VALID]",datetime.datetime.now(), ":", dl_index,"/", dl_len)
+
 
                 for index in range(batch_size):
                     target_bbox = target_bboxes[index]
