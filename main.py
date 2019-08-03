@@ -1,5 +1,12 @@
+import neptune
+neptune.init(project_qualified_name='gatletag/Local-Object-Detection-Tests')
+
 from imgaug import augmenters as iaa
 import torch.optim as optim
+import torch
+
+torch.backends.cudnn.benchmark = True
+
 
 from dataloader import get_dataloader
 from preprocess import transformer, img_transform, reverse_img_transform
@@ -59,7 +66,7 @@ hyper_params = {
 
     # training parameters
     "epochs": 1,
-    "checkpoint_dir": None, #"temp2/final.pth",
+    "checkpoint_dir": None,
     "save_dir": "temp",
 
     # evaluation parameters
@@ -67,8 +74,10 @@ hyper_params = {
     "hasNMS":True, 
     "overlap":0.5, 
     "top_k":2000, 
-
 }
+
+neptune.create_experiment(name='test1',
+        params=hyper_params)
 
 ### =================== TRAIN DATALOADER =========================
 train_seq = iaa.Sequential([
@@ -152,7 +161,7 @@ scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,
 load_components(retinanet, optimizer, scheduler, hyper_params["checkpoint_dir"])
 
 ### ================================= TRAINER ============================
-print(hyper_params["device"])
+
 inferencer = InferenceTransform(
         dir_params["clsids_to_idx_dir"], 
         dir_params["clsids_to_names_dir"], 
@@ -165,6 +174,17 @@ eval_params = {
     "top_k":hyper_params["top_k"],
     "cls_thresh":hyper_params["cls_thresh"]
 }
+
+mAp, dict_aps, average_loss = evaluate_model(
+    train_dl, retinanet, criterion, inferencer,
+    iou_threshold=0.5,
+    nms_threshold=eval_params["overlap"],
+    max_detections=eval_params["top_k"],
+    num_classes=hyper_params["num_classes"],
+    cls_thresh=eval_params["cls_thresh"],
+    device=hyper_params["device"],
+    idx_to_names=inferencer.idx_to_names
+)
 
 trainer = Trainer(
         retinanet, 
@@ -184,25 +204,14 @@ trainer = Trainer(
 
 trainer.train(hyper_params["epochs"])
 
-# retinanet = trainer(retinanet, 
-#         train_dl, 
-#         valid_dl, 
-#         optimizer, 
-#         scheduler, 
-#         criterion, 
-#         hyper_params["epochs"], 
-#         hyper_params["device"],
-#         hyper_params["save_dir"],
-#     )
-
 # ### =============================== EVALUATION ==========================
 
-vis = Visualiser(
-        hyper_params["num_classes"],
-        dir_params["clsids_to_idx_dir"],
-        dir_params["clsids_to_names_dir"],
-        reverse_img_transform
-    )
+# vis = Visualiser(
+#         hyper_params["num_classes"],
+#         dir_params["clsids_to_idx_dir"],
+#         dir_params["clsids_to_names_dir"],
+#         reverse_img_transform
+#     )
 
 # list_results = support_evaluate_model(retinanet, 
 #         valid_dl, 
@@ -214,9 +223,11 @@ vis = Visualiser(
 #         hyper_params["top_k"], 
 #         hyper_params["device"], 
 #         hyper_params["save_dir"],
-#         display = True, 
+#         display = False, 
 #         create_result= True,
 #     )
 
 # TODO: create test set to save the results of that instead
 # save_results_as_csv(list_results, hyper_params["save_dir"]+"/results.csv")
+
+neptune.stop()

@@ -1,4 +1,6 @@
 import torch
+from torchvision import ops
+
 
 def nms(boxes, scores, overlap=0.5, top_k=200):
     """Apply non-maximum suppression at test time to avoid detecting too many
@@ -13,15 +15,18 @@ def nms(boxes, scores, overlap=0.5, top_k=200):
     """
 
     keep = scores.new(scores.size(0)).zero_().long()
+    count = 0
     if boxes.numel() == 0:
-        return keep
+        return keep, count
+
     x1 = boxes[:, 0]
     y1 = boxes[:, 1]
     x2 = boxes[:, 2]
     y2 = boxes[:, 3]
     area = torch.mul(x2 - x1, y2 - y1)
+
     v, idx = scores.sort(0)  # sort in ascending order
-    # I = I[v >= 0.01]
+    
     idx = idx[-top_k:]  # indices of the top-k largest vals
     xx1 = boxes.new()
     yy1 = boxes.new()
@@ -29,12 +34,11 @@ def nms(boxes, scores, overlap=0.5, top_k=200):
     yy2 = boxes.new()
     w = boxes.new()
     h = boxes.new()
-
-    # keep = torch.Tensor()
-    count = 0
+    
+    
     while idx.numel() > 0:
         i = idx[-1]  # index of current largest val
-        # keep.append(i)
+
         keep[count] = i
         count += 1
         if idx.size(0) == 1:

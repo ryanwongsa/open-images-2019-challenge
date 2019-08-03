@@ -17,7 +17,7 @@ class InferenceTransform(nn.Module):
         self.clipBoxes = ClipBoxes()
     
     def forward(self, imgs, classifications, regressions, anchors, cls_thresh = 0.05):
-        batch_size = classifications.shape[0]
+        batch_size = imgs.shape[0]
         scores = torch.max(classifications, dim=2, keepdim=True)[0]
         
         scores_over_thresh = (scores > cls_thresh)[:,:,0]
@@ -31,7 +31,7 @@ class InferenceTransform(nn.Module):
             if scores_over_thresh[i].max()>0:
                 transformed_anchors_i = transformed_anchors[i, scores_over_thresh[i], :]
                 
-                final_classification_scores_i, final_classification_i = torch.max(classifications[0, scores_over_thresh[0], :], dim=1)
+                final_classification_scores_i, final_classification_i = torch.max(classifications[i, scores_over_thresh[i], :], dim=1)
 
                 list_transformed_anchors.append(transformed_anchors_i)
                 list_classifications.append(final_classification_i)

@@ -3,6 +3,8 @@ import torch
 import os
 from utils import make_save_dir, evaluate_model
 import pickle
+# from apex import amp
+import neptune
 
 class Trainer(object):
     def __init__(self, model, train_dataloader, test_dataloader, optimizer, scheduler, criterion, device, save_dir,
@@ -30,7 +32,7 @@ class Trainer(object):
         for i in range(epochs):
             cumm_loss = 0
             pbar = tqdm(self.train_dataloader)
-            for img_ids, imgs, (tgt_bboxes, tgt_labels) in pbar:
+            for batch_idx, (img_ids, imgs, (tgt_bboxes, tgt_labels)) in enumerate(pbar):
                 try:
                     self.optimizer.zero_grad()
                     imgs, tgt_bboxes, tgt_labels = imgs.to(self.device),tgt_bboxes.to(self.device), tgt_labels.to(self.device)
@@ -38,8 +40,11 @@ class Trainer(object):
                     cls_loss, reg_loss = self.criterion(pred_classification, pred_regression, pred_anchors, tgt_bboxes, tgt_labels)
                     loss = cls_loss + reg_loss
                     display_loss = float(loss.cpu().detach().numpy())
+                    neptune.send_metric('batch_loss', batch_idx, loss.data.cpu().numpy())
                     pbar.set_description(str(round(display_loss,5)))
                     loss.backward()
+                    # with amp.scale_loss(loss, self.optimizer) as scaled_loss:
+                    #     scaled_loss.backward()
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.1)
                     self.optimizer.step()
                     cumm_loss += display_loss

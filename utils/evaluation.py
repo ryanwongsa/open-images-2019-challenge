@@ -1,4 +1,8 @@
 from tqdm import tqdm
+from torchvision import ops
+from utils.utils import make_save_dir
+import torch
+import matplotlib.pyplot as plt
 
 def support_evaluate_model(model, dl, inferencer, vis, cls_thresh, hasNMS, overlap, top_k, device, save_dir, display, create_result):
     
@@ -20,16 +24,24 @@ def support_evaluate_model(model, dl, inferencer, vis, cls_thresh, hasNMS, overl
                     transformed_anchors = list_transformed_anchors[index]
                     transformed_classifications = list_classifications[index]
                     transformed_scores = list_scores[index]
-                    if hasNMS:
-                        keep, count = nms(transformed_anchors.detach(), transformed_scores.detach(), overlap=overlap, top_k=top_k)
+                    keep = ops.nms(transformed_anchors, transformed_scores, iou_threshold=overlap)
+  
+                    pred_bboxes = transformed_anchors[keep]
+                    pred_clses = transformed_classifications[keep]
+                    pred_scores = transformed_scores[keep]
+                    # transformed_anchors = list_transformed_anchors[index]
+                    # transformed_classifications = list_classifications[index]
+                    # transformed_scores = list_scores[index]
+                    # if hasNMS:
+                    #     keep, count = nms(transformed_anchors.detach(), transformed_scores.detach(), overlap=overlap, top_k=top_k)
 
-                        transformed_anchors = transformed_anchors[keep[0:count]]
-                        transformed_classifications = transformed_classifications[keep[0:count]]
-                        transformed_scores = transformed_scores[keep[0:count]]
+                    #     transformed_anchors = transformed_anchors[keep[0:count]]
+                    #     transformed_classifications = transformed_classifications[keep[0:count]]
+                    #     transformed_scores = transformed_scores[keep[0:count]]
 
-                    img_bboxes = transformed_anchors.detach().cpu().numpy()
-                    img_clses = transformed_classifications.cpu().numpy()
-                    scores = transformed_scores.detach().cpu().numpy()
+                    img_bboxes = pred_bboxes.detach().cpu().numpy()
+                    img_clses = pred_clses.cpu().numpy()
+                    scores = pred_scores.detach().cpu().numpy()
                 except Exception as e:
                     print(e)
 
