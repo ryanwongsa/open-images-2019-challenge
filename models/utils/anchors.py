@@ -2,6 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+# TODO: make gpu version of this
+
 class Anchors(nn.Module):
     def __init__(self, pyramid_levels, ratios,scales, device):
         super(Anchors, self).__init__()
@@ -35,12 +37,6 @@ class Anchors(nn.Module):
 
 
 def generate_anchors(base_size, ratios, scales):
-    if ratios is None:
-        ratios = np.array([0.5, 1, 2])
-
-    if scales is None:
-        scales = np.array([2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)])
-
     num_anchors = len(ratios) * len(scales)
 
     # initialize output anchors

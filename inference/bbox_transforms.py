@@ -4,11 +4,10 @@ import numpy as np
 
 class BBoxTransform(nn.Module):
 
-    def __init__(self, regress_factor, device):
+    def __init__(self, regress_factor):
         super(BBoxTransform, self).__init__()
 
-        self.regress_factor = torch.from_numpy(
-            np.array(regress_factor).astype(np.float32)).to(device)
+        self.regress_factor = regress_factor
 
 
     def forward(self, boxes, deltas):
@@ -37,20 +36,3 @@ class BBoxTransform(nn.Module):
             [pred_boxes_x1, pred_boxes_y1, pred_boxes_x2, pred_boxes_y2], dim=2)
 
         return pred_boxes
-
-
-class ClipBoxes(nn.Module):
-
-    def __init__(self):
-        super(ClipBoxes, self).__init__()
-
-    def forward(self, boxes, img):
-        batch_size, num_channels, height, width = img.shape
-
-        boxes[:, :, 0] = torch.clamp(boxes[:, :, 0], min=0)
-        boxes[:, :, 1] = torch.clamp(boxes[:, :, 1], min=0)
-
-        boxes[:, :, 2] = torch.clamp(boxes[:, :, 2], max=width)
-        boxes[:, :, 3] = torch.clamp(boxes[:, :, 3], max=height)
-
-        return boxes

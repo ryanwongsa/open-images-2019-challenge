@@ -8,7 +8,7 @@ sys.path.append(".")
 
 from preprocess.preprocess import transformer
 from torch.utils.data import DataLoader
-from models.utils.anchor_helpers import calc_iou
+from torchvision.ops.boxes import box_iou
 
 import pickle
 from collections import defaultdict
@@ -53,7 +53,7 @@ for img_ids, imgs, (target_bboxes, target_labels) in tqdm(dataloader):
     target_label = target_labels[0]
     img_id = img_ids[0]
     
-    iou_bboxes = calc_iou(target_bbox, target_bbox)
+    iou_bboxes = box_iou(target_bbox, target_bbox)
     
     target_width = (target_bbox[:,2]-target_bbox[:,0])
     target_height = (target_bbox[:,3]-target_bbox[:,1])

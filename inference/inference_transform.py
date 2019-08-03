@@ -1,29 +1,25 @@
 import torch
 import torch.nn as nn
-from inference.bbox_transforms import BBoxTransform, ClipBoxes
+from inference.bbox_transforms import BBoxTransform
 import pickle
+from torchvision.ops.boxes import clip_boxes_to_image
 
 class InferenceTransform(nn.Module):
-    def __init__(self, clsids_to_idx_dir, clsids_to_names_dir, regress_factor, device):
+    def __init__(self, idx_to_names, idx_to_cls_ids, regress_factor):
         super(InferenceTransform, self).__init__()
         
-        self.clsids_to_idx = pickle.load(open(clsids_to_idx_dir,'rb'))
-        self.idx_to_cls_ids = {v: k for k, v in self.clsids_to_idx.items()}
-
-        self.clsids_to_names = pickle.load(open(clsids_to_names_dir,'rb'))
-        self.idx_to_names = {k: self.clsids_to_names[v] for k, v in self.idx_to_cls_ids.items()}
-
-        self.regressBoxes = BBoxTransform(regress_factor, device)
-        self.clipBoxes = ClipBoxes()
+        self.idx_to_names = idx_to_names
+        self.idx_to_cls_ids = idx_to_cls_ids
+        self.regressBoxes = BBoxTransform(regress_factor)
     
-    def forward(self, imgs, classifications, regressions, anchors, cls_thresh = 0.05):
-        batch_size = imgs.shape[0]
+    def forward(self, imgs, classifications, regressions, anchors, cls_thresh):
+        batch_size, num_channels, height, width = imgs.shape
         scores = torch.max(classifications, dim=2, keepdim=True)[0]
         
         scores_over_thresh = (scores > cls_thresh)[:,:,0]
         
         transformed_anchors = self.regressBoxes(anchors, regressions)
-        transformed_anchors = self.clipBoxes(transformed_anchors, imgs)
+        transformed_anchors = clip_boxes_to_image(transformed_anchors, (height, width))
         list_transformed_anchors = []
         list_classifications = []
         list_scores = []

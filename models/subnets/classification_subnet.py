@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import math
 
 class ClassificationSubnet(nn.Module):
-    def __init__(self, num_features_in, num_anchors=9, num_classes=501, prior=0.01, feature_size=256):
+    def __init__(self, num_features_in, num_anchors, num_classes, prior, feature_size):
         super(ClassificationSubnet, self).__init__()
         self.num_classes = num_classes
         self.num_anchors = num_anchors
@@ -20,7 +20,6 @@ class ClassificationSubnet(nn.Module):
         
     def init_weights(self, prior):
         for layer in [self.conv1, self.conv2, self.conv3, self.conv4, self.conv5]:
-            # layer.weight.data.normal_(0, 0.01)
             if layer == self.conv5:
                 layer.bias.data.fill_(-math.log((1.0-prior)/prior))
                 layer.weight.data.fill_(0)

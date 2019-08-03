@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import math
 
 class FeaturePyramidNetwork(nn.Module):
     def __init__(self, C3_size, C4_size, C5_size, feature_size=256):
@@ -33,6 +34,17 @@ class FeaturePyramidNetwork(nn.Module):
         self.P7_relu = nn.ReLU()
         self.P7_3x3s2 = nn.Conv2d(feature_size, feature_size, kernel_size=3, stride=2,
                               padding=1)
+
+        self.init_weights()
+
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
         
     def forward(self, inputs):
         C3, C4, C5 = inputs

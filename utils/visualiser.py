@@ -8,17 +8,13 @@ import torch
 import pickle
 
 class Visualiser(object):
-    def __init__(self, num_classes, clsids_to_idx_dir, clsids_to_names_dir, reverse_img_transform):
+    def __init__(self, num_classes, idx_to_names, reverse_img_transform):
         self.num_classes = num_classes
         
         cmap = self.get_cmap(self.num_classes)
         self.color_list = [cmap(float(x)) for x in range(self.num_classes)]
         
-        self.clsids_to_idx = pickle.load(open(clsids_to_idx_dir,'rb'))
-        self.idx_to_cls_ids = {v: k for k, v in self.clsids_to_idx.items()}
-
-        self.clsids_to_names = pickle.load(open(clsids_to_names_dir,'rb'))
-        self.idx_to_names = {k: self.clsids_to_names[v] for k, v in self.idx_to_cls_ids.items()}
+        self.idx_to_names = idx_to_names 
         
         self.reverse_img_transform = reverse_img_transform
         
