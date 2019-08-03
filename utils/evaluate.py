@@ -4,8 +4,8 @@ import torch
 from inference.nms import nms
 
 from utils.utils import make_save_dir
-from models.utils import calc_iou
-from torchvision import ops
+# from models.utils import calc_iou
+from torchvision.ops.boxes import batched_nms, box_iou
 
 def evaluate_model(
         dl,
@@ -26,7 +26,7 @@ def evaluate_model(
     classes, n_gts = torch.LongTensor(range(num_classes)), torch.zeros(num_classes).long()
     total_loss = 0
     with torch.no_grad():
-        for img_ids, imgs, (target_bboxes, target_labels) in tqdm(dl):
+        for img_ids, imgs, (target_bboxes, target_labels) in dl:
             imgs, target_bboxes, target_labels = imgs.to(device), target_bboxes.to(device), target_labels.to(device)
             batch_size, channels, height, width = imgs.shape
 
@@ -48,7 +48,7 @@ def evaluate_model(
 
                 if len(transformed_classifications)>0:
                     # keep = ops.nms(transformed_anchors, transformed_scores, iou_threshold=nms_threshold)
-                    keep = ops.batched_nms(transformed_anchors, transformed_scores, target_label, iou_threshold=nms_threshold)
+                    keep = batched_nms(transformed_anchors, transformed_scores, target_label, iou_threshold=nms_threshold)
                     pred_bboxes = transformed_anchors[keep]
                     pred_clses = transformed_classifications[keep]
                     pred_scores = transformed_scores[keep]
@@ -57,7 +57,8 @@ def evaluate_model(
 
 
                 if len(pred_bboxes) != 0 and len(target_bbox) != 0:
-                    ious = calc_iou(pred_bboxes, target_bbox)
+                    # ious = calc_iou(pred_bboxes, target_bbox)
+                    ious = box_iou(pred_bboxes, target_bbox)
                     max_iou, matches = ious.max(1)
                     detected = []
                     for i in list(range(len(pred_clses))):

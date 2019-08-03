@@ -2,9 +2,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 from models.utils import *
-
+ 
 class FocalLoss(nn.Module):
-    def __init__(self, alpha = 0.25, gamma = 2.0, IoU_bkgrd=0.4, IoU_pos=0.5, regress_factor=[0.1, 0.1, 0.2, 0.2],device="cpu"):
+    def __init__(self, alpha, gamma, IoU_bkgrd, IoU_pos, regress_factor,device):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -40,8 +40,8 @@ class FocalLoss(nn.Module):
  
         anchor_ctr_wh_pi = anchor_ctr_wh[positive_indices]
 
-        tgt_anchors_ctr_wh = anchors_tlbr_to_ctr_wh(anchor_algn_tgt_bbox, self.device)
-        
+        # tgt_anchors_ctr_wh = anchors_tlbr_to_ctr_wh(anchor_algn_tgt_bbox, self.device)
+        tgt_anchors_ctr_wh = change_box_order(anchor_algn_tgt_bbox, 'xyxy2xywh')
         # clip widths to 1
         tgt_anchors_ctr_wh[:, 2:4]  = torch.clamp(tgt_anchors_ctr_wh[:, 2:4], min=1)
         
@@ -69,8 +69,9 @@ class FocalLoss(nn.Module):
         regression_losses = []
 
         anchor = anchors[0, :, :]
-        anchor_ctr_wh = anchors_tlbr_to_ctr_wh(anchor, self.device)
-        
+        # anchor_ctr_wh = anchors_tlbr_to_ctr_wh(anchor, self.device)
+        anchor_ctr_wh = change_box_order(anchor, 'xyxy2xywh')
+
         classifications = torch.clamp(classifications, 1e-4, 1.0 - 1e-4)
         
         for j in range(batch_size):

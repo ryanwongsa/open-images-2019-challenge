@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from torchvision import ops
+from torchvision.ops.boxes import batched_nms, nms
 from utils.utils import make_save_dir
 import torch
 import matplotlib.pyplot as plt
@@ -24,20 +24,12 @@ def support_evaluate_model(model, dl, inferencer, vis, cls_thresh, hasNMS, overl
                     transformed_anchors = list_transformed_anchors[index]
                     transformed_classifications = list_classifications[index]
                     transformed_scores = list_scores[index]
-                    keep = ops.nms(transformed_anchors, transformed_scores, iou_threshold=overlap)
-  
+                    keep =  batched_nms(transformed_anchors, transformed_scores, transformed_classifications, iou_threshold=overlap)
+
                     pred_bboxes = transformed_anchors[keep]
                     pred_clses = transformed_classifications[keep]
                     pred_scores = transformed_scores[keep]
-                    # transformed_anchors = list_transformed_anchors[index]
-                    # transformed_classifications = list_classifications[index]
-                    # transformed_scores = list_scores[index]
-                    # if hasNMS:
-                    #     keep, count = nms(transformed_anchors.detach(), transformed_scores.detach(), overlap=overlap, top_k=top_k)
 
-                    #     transformed_anchors = transformed_anchors[keep[0:count]]
-                    #     transformed_classifications = transformed_classifications[keep[0:count]]
-                    #     transformed_scores = transformed_scores[keep[0:count]]
 
                     img_bboxes = pred_bboxes.detach().cpu().numpy()
                     img_clses = pred_clses.cpu().numpy()
@@ -59,7 +51,7 @@ def support_evaluate_model(model, dl, inferencer, vis, cls_thresh, hasNMS, overl
 
                 if display==True:
                     fig, ax = plt.subplots(1,2, figsize=(20,20))
-                    vis.show_img_anno(ax[0], imgs[index].cpu(), ( transformed_anchors.detach().cpu(),  transformed_classifications.cpu()), transformed_scores.detach().cpu())
+                    vis.show_img_anno(ax[0], imgs[index].cpu(), ( pred_bboxes.detach().cpu(),  pred_clses.cpu()), pred_scores.detach().cpu())
                     vis.show_img_anno(ax[1], imgs[index].cpu(), ( bboxes[index].cpu(), labels[index].cpu()))
                     fig.savefig(save_dir+"/images/"+img_ids[index]+".jpg", dpi=fig.dpi)
                     plt.close()

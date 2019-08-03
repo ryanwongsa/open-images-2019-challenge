@@ -36,21 +36,11 @@ class RetinaNet(nn.Module):
             self.init_freeze_bn()
 
     def init_freeze_bn(self):
-        '''Freeze BatchNorm layers.'''
         for layer in self.modules():
             if isinstance(layer, nn.BatchNorm2d):
                 layer.eval()
-    # def train(self, mode=True):
-    #     super(RetinaNet, self).train(mode)
-    #     if self.freeze_bn:
-    #         for m in self.modules():
-    #             if isinstance(m, nn.BatchNorm2d):
-    #                 m.eval()
-    #                 m.weight.requires_grad = False
-    #                 m.bias.requires_grad = False
-                        
+
     def forward(self, x):
-        
         anchorboxes = self.anchors(x.shape[2:])
         
         x2, x3, x4 = self.resnet_model(x)

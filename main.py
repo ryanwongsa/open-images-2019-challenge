@@ -79,6 +79,13 @@ hyper_params = {
 neptune.create_experiment(name='test1',
         params=hyper_params)
 
+### =================== CLASS INFO =============================
+
+clsids_to_names = pickle.load(open(dir_params["clsids_to_names_dir"],'rb'))
+clsids_to_idx = pickle.load(open(dir_params["clsids_to_idx_dir"],'rb'))
+idx_to_cls_ids = {v: k for k, v in clsids_to_idx.items()}
+idx_to_names = {k: clsids_to_names[v] for k, v in idx_to_cls_ids.items()}
+
 ### =================== TRAIN DATALOADER =========================
 train_seq = iaa.Sequential([
         iaa.Resize({"height": int(hyper_params["img_dim"]*1.05), "width": int(hyper_params["img_dim"]*1.05)}),
@@ -206,28 +213,28 @@ trainer.train(hyper_params["epochs"])
 
 # ### =============================== EVALUATION ==========================
 
-# vis = Visualiser(
-#         hyper_params["num_classes"],
-#         dir_params["clsids_to_idx_dir"],
-#         dir_params["clsids_to_names_dir"],
-#         reverse_img_transform
-#     )
+vis = Visualiser(
+        hyper_params["num_classes"],
+        dir_params["clsids_to_idx_dir"],
+        dir_params["clsids_to_names_dir"],
+        reverse_img_transform
+    )
 
-# list_results = support_evaluate_model(retinanet, 
-#         valid_dl, 
-#         inferencer, 
-#         vis, 
-#         hyper_params["cls_thresh"], 
-#         hyper_params["hasNMS"], 
-#         hyper_params["overlap"], 
-#         hyper_params["top_k"], 
-#         hyper_params["device"], 
-#         hyper_params["save_dir"],
-#         display = False, 
-#         create_result= True,
-#     )
+list_results = support_evaluate_model(retinanet, 
+        valid_dl, 
+        inferencer, 
+        vis, 
+        hyper_params["cls_thresh"], 
+        hyper_params["hasNMS"], 
+        hyper_params["overlap"], 
+        hyper_params["top_k"], 
+        hyper_params["device"], 
+        hyper_params["save_dir"],
+        display = False, 
+        create_result= True,
+    )
 
 # TODO: create test set to save the results of that instead
 # save_results_as_csv(list_results, hyper_params["save_dir"]+"/results.csv")
 
-neptune.stop()
+# neptune.stop()

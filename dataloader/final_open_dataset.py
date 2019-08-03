@@ -11,19 +11,15 @@ import pickle
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class FinalOpenDataset(Dataset):
-    def __init__(self, images_dir, bbox_dir, idx_to_id_dir, clsids_to_idx_dir, clsids_to_names_dir, transform):
+    def __init__(self, images_dir, bbox_dir, idx_to_id_dir, clsids_to_idx, transform):
         self.images_dir = Path(images_dir)
         self.transform = transform
         self.bbox_dir = bbox_dir
         
         self.idx_to_id = pickle.load(open(idx_to_id_dir,'rb'))
-        self.clsids_to_names = pickle.load(open(clsids_to_names_dir,'rb'))
-        self.clsids_to_idx = pickle.load(open(clsids_to_idx_dir,'rb'))
         self.annotations = json.loads(open(bbox_dir,'r').read())
-        
-        self.idx_to_cls_ids = {v: k for k, v in self.clsids_to_idx.items()}
-        self.idx_to_names = {k: self.clsids_to_names[v] for k, v in self.idx_to_cls_ids.items()}
-        
+
+        self.clsids_to_idx = clsids_to_idx
         self.num_items = len(self.idx_to_id)
             
     def image_path(self, image_id):
@@ -89,15 +85,13 @@ class FinalOpenDataset(Dataset):
                     labels[i,:len(lbls)] = torch.tensor(lbls)
         return img_ids, imgs, (bboxes,labels)
 
-
-def get_dataloader(images_dir, bbox_dir, idx_to_id_dir, clsids_to_idx_dir, clsids_to_names_dir,
+def get_dataloader(images_dir, bbox_dir, idx_to_id_dir, clsids_to_idx,
         transform_fn, batch_size, shuffle, num_workers, drop_last):
     dataset = FinalOpenDataset(
         images_dir, 
         bbox_dir, 
         idx_to_id_dir, 
-        clsids_to_idx_dir, 
-        clsids_to_names_dir,
+        clsids_to_idx, 
         transform_fn
     )
 
