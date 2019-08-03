@@ -35,11 +35,11 @@ dir_params = {
 
 hyper_params = {
     # speed parameters
-    "num_workers": 0,
+    "num_workers": 2,
     "device": "cuda",
 
     # dataloader parameters
-    "bs": 1,
+    "bs": 4,
     "img_dim": 512,
 
     # anchor parameters
@@ -47,7 +47,7 @@ hyper_params = {
     "scales": [0.25, 1, 2],
 
     # network parameters
-    "backbone": "resnet34",
+    "backbone": "resnet50",
     "num_classes": 501,
     "pretrained": True,
     "freeze_bn": True,
@@ -66,7 +66,7 @@ hyper_params = {
     "decay_factor": 0.3,
 
     # training parameters
-    "epochs": 2,
+    "epochs": 3,
     "checkpoint_dir": None,
     "save_dir": "temp",
     "fine_tune": True,

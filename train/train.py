@@ -61,7 +61,7 @@ class Trainer(object):
                 except Exception as e:
                     print("ERROR:",str(e))
 
-                self.cb.on_batch_end({"batch_num":total_batches_counter, "loss":display_loss, "trainer":self})
+                self.cb.on_batch_end({"batch_idx":batch_idx, "num_batches":num_batches,"batch_num":total_batches_counter, "loss":display_loss, "trainer":self})
                 total_batches_counter += 1
             ## CHANGE TO USE VALIDATION INSTEAD
             self.scheduler.step(epoch_loss/num_batches)
@@ -102,10 +102,13 @@ class Trainer(object):
                     transformed_scores = list_scores[index]
 
                     if len(transformed_classifications)>0:
-                        keep = batched_nms(transformed_anchors, transformed_scores, target_label, iou_threshold=self.eval_params["overlap"])
-                        pred_bboxes = transformed_anchors[keep]
-                        pred_clses = transformed_classifications[keep]
-                        pred_scores = transformed_scores[keep]
+                        try:
+                            keep = batched_nms(transformed_anchors, transformed_scores, transformed_classifications, iou_threshold=self.eval_params["overlap"])
+                            pred_bboxes = transformed_anchors[keep]
+                            pred_clses = transformed_classifications[keep]
+                            pred_scores = transformed_scores[keep]
+                        except Exception as e:
+                            print("Evaluation Error:", e)
                     else:
                         pred_bboxes = []
                     
