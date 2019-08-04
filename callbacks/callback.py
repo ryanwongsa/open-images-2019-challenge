@@ -25,12 +25,12 @@ class Callback(object):
         self.start = time.time()
 
     def on_end_train_epoch(self, data_dict):
-        print("Ended Train Epoch in (hours):", (time.time() - self.start)/3600.0)
+        print("Ended Train Epoch in (hours):", str(datetime.timedelta(seconds=(time.time() - self.start))))
     
     def on_batch_end(self, data_dict):
         if (data_dict["batch_num"]%10 == 0):
             self.experiment.send_metric('batch_loss', data_dict["batch_num"], data_dict["loss"])
-            print(round((time.time()-self.start)/3600.0,3), ":", data_dict["batch_idx"],"/", data_dict["num_batches"])
+            print(str(datetime.timedelta(seconds=(time.time()-self.start))), ":", data_dict["batch_idx"],"/", data_dict["num_batches"])
 
     
     def on_end_epoch(self, data_dict):
@@ -38,7 +38,7 @@ class Callback(object):
         self.experiment.send_metric('valid_epoch_loss', data_dict["epoch_num"], data_dict["eval_loss"])
         self.end = time.time()
         self.experiment.log_metric("mAp", data_dict["mAp"])
-        print("Epoch completed in (hours):",(self.end - self.start)/3600.0)
+        print("Epoch completed in (hours):",str(datetime.timedelta(seconds=(self.end - self.start))))
         img_pil = aps_img(data_dict["dict_aps"])
         self.experiment.send_image("MAPs", img_pil)
 
@@ -50,7 +50,7 @@ class Callback(object):
         trainer = data_dict["trainer"]
         save_components(trainer.model, trainer.optimizer, trainer.scheduler, self.save_dir)
         self.end_train = time.time()
-        print("Training completed in (hours):",(self.end_train - self.start_train)/3600.0)
+        print("Training completed in (hours):",str(datetime.timedelta(seconds=(self.end_train - self.start_train))))
         self.experiment.send_artifact(self.save_dir+'/final.pth')
         self.experiment.stop()
 

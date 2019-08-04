@@ -9,11 +9,14 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from torchvision.ops.boxes import batched_nms, box_iou
 from evaluation import calcMAp, compute_ap
-# from apex import amp
+
 import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 import time
+
+from apex import amp
+
 
 class Trainer(object):
     def __init__(self, model, train_dataloader, test_dataloader, optimizer, scheduler, criterion, device, 
@@ -52,12 +55,17 @@ class Trainer(object):
 
                     cls_loss, reg_loss = self.criterion(pred_classification, pred_regression, pred_anchors, tgt_bboxes, tgt_labels)
                     loss = cls_loss + reg_loss
-                    display_loss = float(loss.cpu().detach().numpy())
                     
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.1)
-
+                    # loss.backward()
+                    # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.1)
+                    with amp.scale_loss(loss, self.optimizer) as scaled_loss:
+                        scaled_loss.backward()
+                    
+                    # torch.nn.utils.clip_grad_norm_(amp.master_params(self.optimizer), 0.1)
+                    
                     self.optimizer.step()
+
+                    display_loss = float(loss.cpu().detach().numpy())
 
                     epoch_loss += display_loss
                 except Exception as e:
@@ -98,7 +106,7 @@ class Trainer(object):
                 list_transformed_anchors, list_classifications, list_scores = self.inferencer(imgs, classifications, regressions, anchors, cls_thresh=self.eval_params["cls_thresh"])
                 
                 if dl_index % 10 == 0:
-                    print("[VALID]",round((time.time()-start)/3600.0,5), ":", dl_index,"/", dl_len)
+                    print("[VALID]",str(datetime.timedelta(seconds=(time.time()-start))), ":", dl_index,"/", dl_len)
 
 
                 for index in range(batch_size):
@@ -123,7 +131,7 @@ class Trainer(object):
 
                     if len(pred_bboxes) != 0 and len(target_bbox) != 0:
                         # -------------------------------
-                        if random.uniform(0, 1) > 0.95:
+                        if random.uniform(0, 1) > 0.9999:
                             fig, ax = plt.subplots(1,2, figsize=(20,20))
                             canvas = FigureCanvas(fig)
                             self.vis.show_img_anno(ax[0], imgs[index].cpu(), ( pred_bboxes.detach().cpu(),  pred_clses.cpu()), pred_scores.detach().cpu())

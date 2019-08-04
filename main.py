@@ -15,6 +15,9 @@ from utils import Visualiser
 from callbacks import Callback
 import pickle
 import gc
+
+from apex import amp
+
 gc.collect(2)
 
 project_name = "gatletag/Local-Object-Detection-Tests"
@@ -35,11 +38,11 @@ dir_params = {
 
 hyper_params = {
     # speed parameters
-    "num_workers": 2,
+    "num_workers": 4,
     "device": "cuda",
 
     # dataloader parameters
-    "bs": 4,
+    "bs": 8,
     "img_dim": 512,
 
     # anchor parameters
@@ -60,19 +63,19 @@ hyper_params = {
     "regress_factor": [0.1, 0.1, 0.2, 0.2],
 
     # optimizer parameters
-    "lr": 0.01,
+    "lr": 0.001,
     "min_lr": 0.000001,
     "patience": 100,
     "decay_factor": 0.3,
 
     # training parameters
     "epochs": 1,
-    "checkpoint_dir": None,
+    "checkpoint_dir": None, #"temp/final.pth",
     "save_dir": "temp",
     "fine_tune": True,
 
     # evaluation parameters
-    "cls_thresh":0.05, 
+    "cls_thresh":0.10, 
     "overlap":0.5
 }
 
@@ -126,8 +129,6 @@ retinanet = RetinaNet(
         feature_size=256, 
         pyramid_levels = [3, 4, 5, 6, 7]
     )
-retinanet = retinanet.to(hyper_params["device"])
-
 
 # TODO: Move this over to training file
 def set_parameter_requires_grad(model):
@@ -149,7 +150,7 @@ criterion = FocalLoss(
     )
 
 
-optimizer = optim.SGD(retinanet.parameters(), lr=hyper_params["lr"]) # TODO: add weight decay
+optimizer = optim.SGD(retinanet.parameters(), lr=hyper_params["lr"], momentum=0.9, weight_decay=1e-4)
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
         mode='min', 
         factor=hyper_params['decay_factor'], 
@@ -165,6 +166,13 @@ vis = Visualiser(
     )
 
 load_components(retinanet, optimizer, scheduler, hyper_params["checkpoint_dir"])
+
+if torch.cuda.device_count() > 1:
+    print("Using Multiple GPUs")
+    retinanet = torch.nn.DataParallel(retinanet, device_ids=range(torch.cuda.device_count()))
+
+retinanet = retinanet.to(hyper_params["device"])
+retinanet, optimizer = amp.initialize(retinanet, optimizer, opt_level="O1")
 
 cb = Callback(project_name, experiment_name, hyper_params, hyper_params["save_dir"])
 
