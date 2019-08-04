@@ -42,7 +42,7 @@ hyper_params = {
     "device": "cuda",
 
     # dataloader parameters
-    "bs": 8,
+    "bs": 2,
     "img_dim": 512,
 
     # anchor parameters
@@ -63,14 +63,14 @@ hyper_params = {
     "regress_factor": [0.1, 0.1, 0.2, 0.2],
 
     # optimizer parameters
-    "lr": 0.001,
+    "lr": 0.000125, # 0.0005,
     "min_lr": 0.000001,
     "patience": 100,
     "decay_factor": 0.3,
 
     # training parameters
-    "epochs": 1,
-    "checkpoint_dir": None, #"temp/final.pth",
+    "epochs": 100,
+    "checkpoint_dir": None,
     "save_dir": "temp",
     "fine_tune": True,
 
@@ -202,4 +202,5 @@ trainer = Trainer(
         vis
     )
 
-trainer.train(hyper_params["epochs"])
+# trainer.train(hyper_params["epochs"])
+trainer.evaluate()

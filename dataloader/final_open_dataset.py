@@ -56,7 +56,7 @@ class FinalOpenDataset(Dataset):
         return boxes, labels
         
     def __len__(self):
-        return self.num_items
+        return 16 # self.num_items
 
     def __getitem__(self, idx):
         img_id = self.idx_to_id[idx]

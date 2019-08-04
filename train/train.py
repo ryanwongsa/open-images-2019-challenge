@@ -15,7 +15,7 @@ import numpy as np
 import datetime
 import time
 
-from apex import amp
+# from apex import amp
 
 
 class Trainer(object):
@@ -113,9 +113,9 @@ class Trainer(object):
                     target_bbox = target_bboxes[index]
                     target_label= target_labels[index]
 
-                    transformed_anchors = list_transformed_anchors[index]
-                    transformed_classifications = list_classifications[index]
-                    transformed_scores = list_scores[index]
+                    transformed_anchors = list_transformed_anchors[index].float()
+                    transformed_classifications = list_classifications[index].long()
+                    transformed_scores = list_scores[index].float()
 
                     if len(transformed_classifications)>0:
                         try:
@@ -125,6 +125,7 @@ class Trainer(object):
                             pred_scores = transformed_scores[keep]
                         except Exception as e:
                             print("Evaluation Error:", e)
+                            pred_bboxes = []
                     else:
                         pred_bboxes = []
                     
