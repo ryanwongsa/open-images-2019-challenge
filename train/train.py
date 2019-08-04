@@ -15,7 +15,7 @@ import numpy as np
 import datetime
 import time
 
-# from apex import amp
+from apex import amp
 
 
 class Trainer(object):

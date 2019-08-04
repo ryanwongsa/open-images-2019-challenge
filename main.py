@@ -42,7 +42,7 @@ hyper_params = {
     "device": "cuda",
 
     # dataloader parameters
-    "bs": 2,
+    "bs": 8,
     "img_dim": 512,
 
     # anchor parameters
@@ -63,7 +63,7 @@ hyper_params = {
     "regress_factor": [0.1, 0.1, 0.2, 0.2],
 
     # optimizer parameters
-    "lr": 0.000125, # 0.0005,
+    "lr": 0.0005,
     "min_lr": 0.000001,
     "patience": 100,
     "decay_factor": 0.3,
@@ -130,6 +130,11 @@ retinanet = RetinaNet(
         pyramid_levels = [3, 4, 5, 6, 7]
     )
 
+if torch.cuda.device_count() > 1:
+    print("Using Multiple GPUs")
+    retinanet = torch.nn.DataParallel(retinanet, device_ids=range(torch.cuda.device_count()))
+retinanet = retinanet.to(hyper_params["device"])
+
 # TODO: Move this over to training file
 def set_parameter_requires_grad(model):
         for name, param in model.named_parameters():
@@ -167,11 +172,6 @@ vis = Visualiser(
 
 load_components(retinanet, optimizer, scheduler, hyper_params["checkpoint_dir"])
 
-if torch.cuda.device_count() > 1:
-    print("Using Multiple GPUs")
-    retinanet = torch.nn.DataParallel(retinanet, device_ids=range(torch.cuda.device_count()))
-
-retinanet = retinanet.to(hyper_params["device"])
 retinanet, optimizer = amp.initialize(retinanet, optimizer, opt_level="O1")
 
 cb = Callback(project_name, experiment_name, hyper_params, hyper_params["save_dir"])
@@ -202,5 +202,5 @@ trainer = Trainer(
         vis
     )
 
-# trainer.train(hyper_params["epochs"])
-trainer.evaluate()
+trainer.train(hyper_params["epochs"])
+# trainer.evaluate()
