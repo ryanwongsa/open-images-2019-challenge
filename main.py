@@ -110,7 +110,7 @@ valid_dl = get_dataloader(
         dir_params["valid_bbox_dir"], 
         dir_params["valid_idx_to_id_dir"], 
         clsids_to_idx, 
-        valid_transform_fn, 2, False, 0, False # TODO: CHANGE THIS BACK hyper_params["bs"], False, hyper_params["num_workers"], False
+        valid_transform_fn, hyper_params["bs"], False, hyper_params["num_workers"], False
     )
 
 

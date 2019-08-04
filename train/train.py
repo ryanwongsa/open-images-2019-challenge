@@ -13,6 +13,7 @@ from evaluation import calcMAp, compute_ap
 import matplotlib.pyplot as plt
 import numpy as np
 import datetime
+import time
 
 class Trainer(object):
     def __init__(self, model, train_dataloader, test_dataloader, optimizer, scheduler, criterion, device, 
@@ -69,8 +70,8 @@ class Trainer(object):
 
             self.model.eval()
             self.cb.on_end_train_epoch({"epoch_num":i})
-            mAp, dict_aps, eval_loss, display_imgs = self.evaluate()
-            self.cb.on_end_epoch({"display_imgs":display_imgs,"mAp":mAp, "dict_aps":dict_aps, "eval_loss":eval_loss, "epoch_loss": epoch_loss, "epoch_num":i,"trainer":self})
+            mAp, dict_aps, eval_loss = self.evaluate()
+            self.cb.on_end_epoch({"mAp":mAp, "dict_aps":dict_aps, "eval_loss":eval_loss, "epoch_loss": epoch_loss, "epoch_num":i,"trainer":self})
             self.model.train()
         
         self.cb.on_train_end({"trainer":self,"mAp":mAp})
@@ -78,11 +79,11 @@ class Trainer(object):
 
     def evaluate(self):
         average_precisions = {}
-        temp_images = []
         tps, clas, p_scores = [], [], []
         classes, n_gts = torch.LongTensor(range(self.num_classes)), torch.zeros(self.num_classes).long()
         total_loss = 0
         dl_len = len(self.test_dataloader)
+        start = time.time()
         with torch.no_grad():
             for dl_index, (img_ids, imgs, (target_bboxes, target_labels)) in enumerate(self.test_dataloader):
                 imgs, target_bboxes, target_labels = imgs.to(self.device), target_bboxes.to(self.device), target_labels.to(self.device)
@@ -97,7 +98,7 @@ class Trainer(object):
                 list_transformed_anchors, list_classifications, list_scores = self.inferencer(imgs, classifications, regressions, anchors, cls_thresh=self.eval_params["cls_thresh"])
                 
                 if dl_index % 10 == 0:
-                    print("[VALID]",datetime.datetime.now(), ":", dl_index,"/", dl_len)
+                    print("[VALID]",round((time.time()-start)/3600.0,5), ":", dl_index,"/", dl_len)
 
 
                 for index in range(batch_size):
@@ -134,7 +135,7 @@ class Trainer(object):
                             width, height = fig.get_size_inches() * fig.get_dpi()
                             pil_image = PIL.Image.frombytes('RGB', canvas.get_width_height(), canvas.tostring_rgb())
                             plt.close()
-                            temp_images.append(pil_image)
+                            self.cb.on_during_eval(pil_image)
                         # -------------------------------
 
                         ious = box_iou(pred_bboxes, target_bbox)
@@ -165,6 +166,6 @@ class Trainer(object):
                     aps.append(compute_ap(precision, recall))
                 else: aps.append(0.)
             mAp, dict_aP = calcMAp(aps, self.num_classes, self.inferencer.idx_to_names)
-            return mAp, dict_aP, avg_loss[0], temp_images
+            return mAp, dict_aP, avg_loss[0]
         except:
-            return -1, {}, avg_loss[0], temp_images
+            return -1, {}, avg_loss[0]
