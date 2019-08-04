@@ -69,7 +69,7 @@ hyper_params = {
     "decay_factor": 0.3,
 
     # training parameters
-    "epochs": 100,
+    "epochs": 1,
     "checkpoint_dir": None,
     "save_dir": "temp",
     "fine_tune": True,
