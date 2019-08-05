@@ -36,12 +36,17 @@ class Callback(object):
         self.experiment.send_metric('train_epoch_loss', data_dict["epoch_num"], data_dict["epoch_loss"])
         self.experiment.send_metric('valid_epoch_loss', data_dict["epoch_num"], data_dict["eval_loss"])
         self.end = time.time()
+        self.experiment.log_metric("mAp", data_dict["mAp"])
         print("Epoch completed in (hours):",str(datetime.timedelta(seconds=(self.end - self.start))))
+        img_pil = aps_img(data_dict["dict_aps"])
+        self.experiment.send_image("MAPs", img_pil)
 
     def on_during_eval(self, image):
         self.experiment.send_image("eval_images", image)
 
     def on_train_end(self, data_dict):
+        self.experiment.log_metric("final_mAp", data_dict["mAp"])
+
         trainer = data_dict["trainer"]
         save_components(trainer.model, trainer.optimizer, trainer.scheduler, self.save_dir)
         self.end_train = time.time()

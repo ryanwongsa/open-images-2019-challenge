@@ -58,15 +58,16 @@ class Trainer(object):
                     # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.1)
                     with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                         scaled_loss.backward()
-                    
+
                     # torch.nn.utils.clip_grad_norm_(amp.master_params(self.optimizer), 0.1)
-                    
+
                     self.optimizer.step()
 
                     display_loss = float(loss.cpu().detach().numpy())
 
                     epoch_loss += display_loss
                 except Exception as e:
+                    display_loss = 10
                     print("ERROR:",str(e))
 
                 self.cb.on_batch_end({"batch_idx":batch_idx, "num_batches":num_batches,"batch_num":total_batches_counter, "loss":display_loss, "trainer":self})
@@ -76,11 +77,12 @@ class Trainer(object):
 
             self.model.eval()
             self.cb.on_end_train_epoch({"epoch_num":i})
-            eval_loss = self.evaluate()
-            self.cb.on_end_epoch({"eval_loss":eval_loss, "epoch_loss": epoch_loss, "epoch_num":i,"trainer":self})
+            mAp, dict_aps, eval_loss = self.evaluate()
+            self.cb.on_end_epoch({"mAp":mAp, "dict_aps":dict_aps, "eval_loss":eval_loss, "epoch_loss": epoch_loss, "epoch_num":i,"trainer":self})
+
             self.model.train()
         
-        self.cb.on_train_end({"trainer":self})
+        self.cb.on_train_end({"trainer":self,"mAp":mAp})
 
 
     def evaluate(self):
@@ -95,11 +97,81 @@ class Trainer(object):
                 imgs, target_bboxes, target_labels = imgs.to(self.device), target_bboxes.to(self.device), target_labels.to(self.device)
                 batch_size, channels, height, width = imgs.shape
 
-                comb_loss = self.model(imgs, 'EVALUATING', target_bboxes, target_labels)
+                classifications, regressions, anchors, comb_loss = self.model(imgs, 'EVALUATING', target_bboxes, target_labels)
                 loss = comb_loss.mean()
                 total_loss += loss.cpu().detach().numpy()
                
                 if dl_index % 10 == 0:
                     print("[VALID]",str(datetime.timedelta(seconds=(time.time()-start))), ":", dl_index,"/", dl_len)
+                
+                list_transformed_anchors, list_classifications, list_scores = self.inferencer(imgs, classifications, regressions, anchors[0].unsqueeze(0), cls_thresh=self.eval_params["cls_thresh"])
+                
+                for index in range(batch_size):
+                    target_bbox = target_bboxes[index]
+                    target_label= target_labels[index]
 
-        return total_loss / dl_len
+                    transformed_anchors = list_transformed_anchors[index].float()
+                    transformed_classifications = list_classifications[index].long()
+                    transformed_scores = list_scores[index].float()
+
+                    if len(transformed_classifications)>0:
+                        try:
+                            keep = batched_nms(transformed_anchors, transformed_scores, transformed_classifications, iou_threshold=self.eval_params["overlap"])
+                            pred_bboxes = transformed_anchors[keep]
+                            pred_clses = transformed_classifications[keep]
+                            pred_scores = transformed_scores[keep]
+                        except Exception as e:
+                            print("Evaluation Error:", e)
+                            pred_bboxes = []
+                    else:
+                        pred_bboxes = []
+                    
+
+                    if len(pred_bboxes) != 0 and len(target_bbox) != 0:
+                        # -------------------------------
+                        if random.uniform(0, 1) > 0.9999:
+                            fig, ax = plt.subplots(1,2, figsize=(20,20))
+                            canvas = FigureCanvas(fig)
+                            self.vis.show_img_anno(ax[0], imgs[index].cpu(), ( pred_bboxes.detach().cpu(),  pred_clses.cpu()), pred_scores.detach().cpu())
+                            self.vis.show_img_anno(ax[1], imgs[index].cpu(), ( target_bboxes[index].cpu(), target_labels[index].cpu()))
+                            ax[0].axis('off')
+                            ax[1].axis('off')
+                            plt.tight_layout()
+                            canvas.draw()
+                            width, height = fig.get_size_inches() * fig.get_dpi()
+                            pil_image = PIL.Image.frombytes('RGB', canvas.get_width_height(), canvas.tostring_rgb())
+                            plt.close()
+                            self.cb.on_during_eval(pil_image)
+                        # -------------------------------
+
+                        ious = box_iou(pred_bboxes, target_bbox)
+                        max_iou, matches = ious.max(1)
+                        detected = []
+                        for i in list(range(len(pred_clses))):
+                            if max_iou[i] >= self.iou_threshold and matches[i] not in detected and target_label[matches[i]] == pred_clses[i]:
+                                detected.append(matches[i])
+                                tps.append(1)
+                            else: 
+                                tps.append(0)
+                        clas.append(pred_clses.cpu())
+                        p_scores.append(pred_scores.cpu())
+                    n_gts += (target_label.cpu()[:,None] == classes[None,:]).sum(0)
+        try:
+            avg_loss = total_loss/ len(self.test_dataloader)
+            tps, p_scores, clas = torch.tensor(tps), torch.cat(p_scores,0), torch.cat(clas,0)
+            fps = 1-tps
+            idx = p_scores.argsort(descending=True)
+            tps, fps, clas = tps[idx], fps[idx], clas[idx]
+            
+            aps = []
+            for cls in range(self.num_classes):
+                tps_cls, fps_cls = tps[clas==cls].float().cumsum(0), fps[clas==cls].float().cumsum(0)
+                if tps_cls.numel() != 0 and tps_cls[-1] != 0:
+                    precision = tps_cls / (tps_cls + fps_cls + 1e-8)
+                    recall = tps_cls / (n_gts[cls] + 1e-8)
+                    aps.append(compute_ap(precision, recall))
+                else: aps.append(0.)
+            mAp, dict_aP = calcMAp(aps, self.num_classes, self.inferencer.idx_to_names)
+            return mAp, dict_aP, avg_loss
+        except:
+            return -1, {}, avg_loss
