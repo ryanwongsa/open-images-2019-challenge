@@ -61,9 +61,11 @@ class RetinaNet(nn.Module):
         list_classification = [self.classificationModel(feature) for feature in features]
         classification = torch.cat(list_classification, dim=1)
         
-        if mode != "INFERENCE":
+        if mode == "TRAINING":
             cls_loss, reg_loss = self.criterion(classification, regression, self.anchorboxes, tgt_bboxes, tgt_labels)
             loss = cls_loss + reg_loss
             return loss
-        else:
-            return [classification, regression, self.anchorboxes]
+        elif mode == "EVALUATING":
+            cls_loss, reg_loss = self.criterion(classification, regression, self.anchorboxes, tgt_bboxes, tgt_labels)
+            loss = cls_loss + reg_loss
+            return classification, regression, self.anchorboxes, loss
