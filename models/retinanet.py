@@ -6,7 +6,7 @@ from models.subnets import RegressionSubnet, ClassificationSubnet
 from models.utils.anchors import Anchors
 
 class RetinaNet(nn.Module):
-    def __init__(self, backbone, num_classes, ratios, scales, device, pretrained, freeze_bn, prior, feature_size, pyramid_levels):
+    def __init__(self, backbone, num_classes, ratios, scales, device, pretrained, freeze_bn, prior, feature_size, pyramid_levels, criterion=None):
         super(RetinaNet, self).__init__()
         
         if backbone=="resnet18":
@@ -38,12 +38,14 @@ class RetinaNet(nn.Module):
         self.anchorboxes = None
         self.image_shape = None
 
+        self.criterion = criterion
+
     def init_freeze_bn(self):
         for layer in self.modules():
             if isinstance(layer, nn.BatchNorm2d):
                 layer.eval()
 
-    def forward(self, x):
+    def forward(self, x, mode='INFERENCE', tgt_bboxes=None, tgt_labels=None):
 
         if self.anchorboxes is None or self.image_shape is None or self.image_shape != x.shape[2:]:
             self.anchorboxes = self.anchors(x.shape[2:])
@@ -59,4 +61,9 @@ class RetinaNet(nn.Module):
         list_classification = [self.classificationModel(feature) for feature in features]
         classification = torch.cat(list_classification, dim=1)
         
-        return [classification, regression, self.anchorboxes]
+        if mode != "INFERENCE":
+            cls_loss, reg_loss = self.criterion(classification, regression, self.anchorboxes, tgt_bboxes, tgt_labels)
+            loss = cls_loss + reg_loss
+            return loss
+        else:
+            return [classification, regression, self.anchorboxes]
