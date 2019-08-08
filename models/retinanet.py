@@ -69,3 +69,5 @@ class RetinaNet(nn.Module):
             cls_loss, reg_loss = self.criterion(classification, regression, self.anchorboxes, tgt_bboxes, tgt_labels)
             loss = cls_loss + reg_loss
             return classification, regression, self.anchorboxes, loss
+        else:
+            return classification, regression, self.anchorboxes
