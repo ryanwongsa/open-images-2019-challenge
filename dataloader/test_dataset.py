@@ -36,7 +36,7 @@ class TestDataset(Dataset):
         img = self.load_image(img_path)
         img = np.array(img)
 
-        img = self.transform(img)
+        img, anno = self.transform(img, None)
         return img_id, img
     
     def collate_fn(self, samples):
