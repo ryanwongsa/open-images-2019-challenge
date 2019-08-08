@@ -116,6 +116,14 @@ valid_dl = get_dataloader(
         valid_transform_fn, hyper_params["bs"], False, hyper_params["num_workers"], False
     )
 
+criterion = FocalLoss(
+        hyper_params["alpha"], 
+        hyper_params["gamma"], 
+        hyper_params["IoU_bkgrd"], 
+        hyper_params["IoU_pos"], 
+        hyper_params["regress_factor"], 
+        hyper_params["device"]
+    )
 
 retinanet = RetinaNet(
         hyper_params["backbone"], 
@@ -127,7 +135,8 @@ retinanet = RetinaNet(
         freeze_bn = hyper_params["freeze_bn"],
         prior=0.01, 
         feature_size=256, 
-        pyramid_levels = [3, 4, 5, 6, 7]
+        pyramid_levels = [3, 4, 5, 6, 7], 
+        loss_fn = criterion
     )
 
 if torch.cuda.device_count() > 1:
@@ -143,17 +152,6 @@ def set_parameter_requires_grad(model):
 
 if hyper_params["fine_tune"]==True:
     set_parameter_requires_grad(retinanet)
-
-
-criterion = FocalLoss(
-        hyper_params["alpha"], 
-        hyper_params["gamma"], 
-        hyper_params["IoU_bkgrd"], 
-        hyper_params["IoU_pos"], 
-        hyper_params["regress_factor"], 
-        hyper_params["device"]
-    )
-
 
 optimizer = optim.SGD(retinanet.parameters(), lr=hyper_params["lr"], momentum=0.9, weight_decay=1e-4)
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 

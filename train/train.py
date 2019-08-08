@@ -51,24 +51,23 @@ class Trainer(object):
                 try:
                     self.optimizer.zero_grad()
                     imgs, tgt_bboxes, tgt_labels = imgs.to(self.device),tgt_bboxes.to(self.device), tgt_labels.to(self.device)
-                    pred_classification, pred_regression, pred_anchors = self.model(imgs)
+                    loss_comb = self.model(imgs, 'TRAINING', tgt_bboxes, tgt_labels)
+                    loss = loss_comb.mean()
 
-                    cls_loss, reg_loss = self.criterion(pred_classification, pred_regression, pred_anchors, tgt_bboxes, tgt_labels)
-                    loss = cls_loss + reg_loss
-                    
                     # loss.backward()
                     # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.1)
                     with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                         scaled_loss.backward()
-                    
+
                     # torch.nn.utils.clip_grad_norm_(amp.master_params(self.optimizer), 0.1)
-                    
+
                     self.optimizer.step()
 
                     display_loss = float(loss.cpu().detach().numpy())
 
                     epoch_loss += display_loss
                 except Exception as e:
+                    display_loss = 10
                     print("ERROR:",str(e))
 
                 self.cb.on_batch_end({"batch_idx":batch_idx, "num_batches":num_batches,"batch_num":total_batches_counter, "loss":display_loss, "trainer":self})
@@ -80,6 +79,7 @@ class Trainer(object):
             self.cb.on_end_train_epoch({"epoch_num":i})
             mAp, dict_aps, eval_loss = self.evaluate()
             self.cb.on_end_epoch({"mAp":mAp, "dict_aps":dict_aps, "eval_loss":eval_loss, "epoch_loss": epoch_loss, "epoch_num":i,"trainer":self})
+
             self.model.train()
         
         self.cb.on_train_end({"trainer":self,"mAp":mAp})
@@ -97,18 +97,15 @@ class Trainer(object):
                 imgs, target_bboxes, target_labels = imgs.to(self.device), target_bboxes.to(self.device), target_labels.to(self.device)
                 batch_size, channels, height, width = imgs.shape
 
-                classifications, regressions, anchors = self.model(imgs)
-                cls_loss, reg_loss = self.criterion(classifications, regressions, anchors, target_bboxes, target_labels)
-                
-                loss = cls_loss + reg_loss
+                classifications, regressions, anchors, comb_loss = self.model(imgs, 'EVALUATING', target_bboxes, target_labels)
+                loss = comb_loss.mean()
                 total_loss += loss.cpu().detach().numpy()
-
-                list_transformed_anchors, list_classifications, list_scores = self.inferencer(imgs, classifications, regressions, anchors, cls_thresh=self.eval_params["cls_thresh"])
-                
+               
                 if dl_index % 10 == 0:
                     print("[VALID]",str(datetime.timedelta(seconds=(time.time()-start))), ":", dl_index,"/", dl_len)
-
-
+                
+                list_transformed_anchors, list_classifications, list_scores = self.inferencer(imgs, classifications, regressions, anchors[0].unsqueeze(0), cls_thresh=self.eval_params["cls_thresh"])
+                
                 for index in range(batch_size):
                     target_bbox = target_bboxes[index]
                     target_label= target_labels[index]
@@ -175,6 +172,6 @@ class Trainer(object):
                     aps.append(compute_ap(precision, recall))
                 else: aps.append(0.)
             mAp, dict_aP = calcMAp(aps, self.num_classes, self.inferencer.idx_to_names)
-            return mAp, dict_aP, avg_loss[0]
+            return mAp, dict_aP, avg_loss
         except:
-            return -1, {}, avg_loss[0]
+            return -1, {}, avg_loss

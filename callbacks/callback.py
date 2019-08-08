@@ -32,7 +32,6 @@ class Callback(object):
             self.experiment.send_metric('batch_loss', data_dict["batch_num"], data_dict["loss"])
             print(str(datetime.timedelta(seconds=(time.time()-self.start))), ":", data_dict["batch_idx"],"/", data_dict["num_batches"])
 
-    
     def on_end_epoch(self, data_dict):
         self.experiment.send_metric('train_epoch_loss', data_dict["epoch_num"], data_dict["epoch_loss"])
         self.experiment.send_metric('valid_epoch_loss', data_dict["epoch_num"], data_dict["eval_loss"])
@@ -47,6 +46,7 @@ class Callback(object):
 
     def on_train_end(self, data_dict):
         self.experiment.log_metric("final_mAp", data_dict["mAp"])
+
         trainer = data_dict["trainer"]
         save_components(trainer.model, trainer.optimizer, trainer.scheduler, self.save_dir)
         self.end_train = time.time()

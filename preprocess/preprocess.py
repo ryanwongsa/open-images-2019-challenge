@@ -7,6 +7,10 @@ import torch
 def transformer(seq=None, image_transforms=None):
     def transform_imgbbox(image, anno):
         if seq !=None:
+            if anno==None:
+                image = seq(image=image)
+                image = image_transforms(image)
+                return image, anno
             image, anno = convert_transform_to_bbox(image, anno)
             if anno==None:
                 image = seq(image=image)
