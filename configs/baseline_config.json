@@ -1,0 +1,52 @@
+{
+    "projectconfig":{
+        "project_name":"gatletag/Local-Object-Detection-Tests",
+        "experiment_name": "baseline"  
+    },
+    "dirparams": {
+        "train_images_dir": "dataset/validation",
+        "train_bbox_dir": "data_info/valid/annotations/valid-anno.json",
+        "train_idx_to_id_dir": "data_info/valid/annotations/valid-idx_to_id.pkl",
+
+        "valid_images_dir": "dataset/validation",
+        "valid_bbox_dir": "data_info/valid/annotations/valid-anno.json",
+        "valid_idx_to_id_dir": "data_info/valid/annotations/valid-idx_to_id.pkl",
+
+        "clsids_to_idx_dir": "data_info/clsids_to_idx.pkl",
+        "clsids_to_names_dir": "data_info/clsids_to_names.pkl"
+    },
+    "hyperparams": {
+        "num_workers": 4,
+        "device": "cuda",
+
+        "bs": 8,
+        "img_dim": 512,
+
+        "ratios": [0.25, 0.5, 1, 2],
+        "scales": [0.25, 1, 2],
+
+        "backbone": "resnet50",
+        "num_classes": 501,
+        "pretrained": true,
+        "freeze_bn": true,
+
+        "alpha": 0.25,
+        "gamma": 2.0,
+        "IoU_bkgrd":0.4,
+        "IoU_pos":0.5,
+        "regress_factor": [0.1, 0.1, 0.2, 0.2],
+
+        "lr": 0.001,
+        "min_lr": 0.000001,
+        "patience": 100,
+        "decay_factor": 0.3,
+
+        "epochs": 1,
+        "checkpoint_dir": null,
+        "save_dir": "temp",
+        "fine_tune": true,
+
+        "cls_thresh":0.10, 
+        "overlap":0.5
+    }
+}

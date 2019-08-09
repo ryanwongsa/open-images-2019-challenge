@@ -1,6 +1,6 @@
 
 import neptune
-from train import save_components
+from train import save_components, get_lr
 import time
 import datetime
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -26,11 +26,17 @@ class Callback(object):
 
     def on_end_train_epoch(self, data_dict):
         print("Ended Train Epoch in (hours):", str(datetime.timedelta(seconds=(time.time() - self.start))))
+        trainer = data_dict["trainer"]
+        save_components(trainer.model, trainer.optimizer, trainer.scheduler, self.save_dir+"/epoch-"+str(data_dict["epoch_num"])+".pth")
     
     def on_batch_end(self, data_dict):
         if (data_dict["batch_num"]%10 == 0):
             self.experiment.send_metric('batch_loss', data_dict["batch_num"], data_dict["loss"])
+            self.experiment.send_metric('lr', data_dict["batch_num"], get_lr(data_dict["trainer"].optimizer))
             print(str(datetime.timedelta(seconds=(time.time()-self.start))), ":", data_dict["batch_idx"],"/", data_dict["num_batches"])
+            
+        if (data_dict["batch_num"]%1000 == 0):
+            save_components(trainer.model, trainer.optimizer, trainer.scheduler, self.save_dir+"/batch-"+str(data_dict["batch_num"])+".pth")
 
     def on_end_epoch(self, data_dict):
         self.experiment.send_metric('train_epoch_loss', data_dict["epoch_num"], data_dict["epoch_loss"])
@@ -39,7 +45,9 @@ class Callback(object):
         self.experiment.log_metric("mAp", data_dict["mAp"])
         print("Epoch completed in (hours):",str(datetime.timedelta(seconds=(self.end - self.start))))
         img_pil = aps_img(data_dict["dict_aps"])
+        print("aPs: ", data_dict["dict_aps"])
         self.experiment.send_image("MAPs", img_pil)
+        
 
     def on_during_eval(self, image):
         self.experiment.send_image("eval_images", image)
@@ -48,7 +56,7 @@ class Callback(object):
         self.experiment.log_metric("final_mAp", data_dict["mAp"])
 
         trainer = data_dict["trainer"]
-        save_components(trainer.model, trainer.optimizer, trainer.scheduler, self.save_dir)
+        save_components(trainer.model, trainer.optimizer, trainer.scheduler, self.save_dir+"/final.pth")
         self.end_train = time.time()
         print("Training completed in (hours):",str(datetime.timedelta(seconds=(self.end_train - self.start_train))))
         self.experiment.send_artifact(self.save_dir+'/final.pth')

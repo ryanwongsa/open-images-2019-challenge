@@ -72,13 +72,13 @@ class Trainer(object):
 
                 self.cb.on_batch_end({"batch_idx":batch_idx, "num_batches":num_batches,"batch_num":total_batches_counter, "loss":display_loss, "trainer":self})
                 total_batches_counter += 1
-            ## CHANGE TO USE VALIDATION INSTEAD
-            self.scheduler.step(epoch_loss/num_batches)
-
+            
             self.model.eval()
-            self.cb.on_end_train_epoch({"epoch_num":i})
+            self.cb.on_end_train_epoch({"epoch_num":i,"trainer":self})
             mAp, dict_aps, eval_loss = self.evaluate()
-            self.cb.on_end_epoch({"mAp":mAp, "dict_aps":dict_aps, "eval_loss":eval_loss, "epoch_loss": epoch_loss, "epoch_num":i,"trainer":self})
+            self.scheduler.step(eval_loss)
+        
+            self.cb.on_end_epoch({"mAp":mAp, "dict_aps":dict_aps, "eval_loss":eval_loss, "epoch_loss": epoch_loss/len(self.train_dataloader), "epoch_num":i,"trainer":self})
 
             self.model.train()
         

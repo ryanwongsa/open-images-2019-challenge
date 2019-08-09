@@ -14,9 +14,22 @@ def load_components(model, optimizer, scheduler, checkpoint_dir):
 def save_components(model, optimizer, scheduler, save_dir):
         
     if save_dir != None:
+        print("Saving checkpoint to:", save_dir)
         make_save_dir(save_dir)
-        torch.save({
-            "model": model.module.state_dict(),
-            "optimizer": optimizer.state_dict(),
-            "scheduler": scheduler.state_dict(),
-        }, save_dir+"/final.pth")
+        if torch.cuda.device_count() > 1:
+            torch.save({
+                "model": model.module.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "scheduler": scheduler.state_dict(),
+            }, save_dir)
+        else:
+            torch.save({
+                "model": model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "scheduler": scheduler.state_dict(),
+            }, save_dir)
+            
+            
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
