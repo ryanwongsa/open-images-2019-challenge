@@ -62,7 +62,7 @@ class Trainer(object):
                     # torch.nn.utils.clip_grad_norm_(amp.master_params(self.optimizer), 0.1)
 
                     self.optimizer.step()
-
+                    self.scheduler.step()
                     display_loss = float(loss.cpu().detach().numpy())
 
                     epoch_loss += display_loss
@@ -76,7 +76,7 @@ class Trainer(object):
             self.model.eval()
             self.cb.on_end_train_epoch({"epoch_num":i,"trainer":self})
             mAp, dict_aps, eval_loss = self.evaluate()
-            self.scheduler.step(eval_loss)
+#             self.scheduler.step(eval_loss)
         
             self.cb.on_end_epoch({"mAp":mAp, "dict_aps":dict_aps, "eval_loss":eval_loss, "epoch_loss": epoch_loss/len(self.train_dataloader), "epoch_num":i,"trainer":self})
 

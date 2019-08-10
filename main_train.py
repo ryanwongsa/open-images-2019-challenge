@@ -117,13 +117,14 @@ retinanet = retinanet.to(hyper_params["device"])
 ### ==================================== 5. OPTIMIZER ===================================
 
 optimizer = optim.SGD(retinanet.parameters(), lr=hyper_params["lr"], momentum=0.9, weight_decay=1e-4)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
-        mode='min', 
-        factor=hyper_params['decay_factor'], 
-        patience=hyper_params["patience"], 
-        verbose=True, 
-        min_lr=hyper_params["min_lr"]
-    )
+# scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
+#         mode='min', 
+#         factor=hyper_params['decay_factor'], 
+#         patience=hyper_params["patience"], 
+#         verbose=True, 
+#         min_lr=hyper_params["min_lr"]
+#     )
+scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=hyper_params["lr"], max_lr=hyper_params["lr"]*10,step_size_up=int(len(train_dl)*hyper_params["epochs"]*0.3), step_size_down=int(len(train_dl)*hyper_params["epochs"]*0.7), mode='exp_range')
 
 ### ================================ 6. VISUALISATION ===================================
 

@@ -7,8 +7,8 @@ def load_components(model, optimizer, scheduler, checkpoint_dir):
         print("Loading from checkpoint:", checkpoint_dir)
         checkpoint = torch.load(checkpoint_dir)#, map_location = lambda storage, loc: storage.cuda())
         model.load_state_dict(checkpoint['model'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        scheduler.load_state_dict(checkpoint['scheduler'])
+#         optimizer.load_state_dict(checkpoint['optimizer'])
+#         scheduler.load_state_dict(checkpoint['scheduler'])
 
 
 def save_components(model, optimizer, scheduler, save_dir):
