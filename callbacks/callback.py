@@ -36,7 +36,7 @@ class Callback(object):
             print(str(datetime.timedelta(seconds=(time.time()-self.start))), ":", data_dict["batch_idx"],"/", data_dict["num_batches"])
             
         if (data_dict["batch_num"]%1000 == 0):
-            save_components(trainer.model, trainer.optimizer, trainer.scheduler, self.save_dir+"/batch-"+str(data_dict["batch_num"])+".pth")
+            save_components(data_dict["trainer"].model, data_dict["trainer"].optimizer, data_dict["trainer"].scheduler, self.save_dir+"/batch-"+str(data_dict["batch_num"])+".pth")
 
     def on_end_epoch(self, data_dict):
         self.experiment.send_metric('train_epoch_loss', data_dict["epoch_num"], data_dict["epoch_loss"])

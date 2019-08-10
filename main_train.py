@@ -148,7 +148,7 @@ retinanet, optimizer = amp.initialize(retinanet, optimizer, opt_level="O1")
 
 if torch.cuda.device_count() > 1:
     print("Using Multiple GPUs")
-    retinanet = torch.nn.DataParallel(retinanet, 
+    retinanet = torch.nn.DataParallel(retinanet, device_ids=range(torch.cuda.device_count())) 
 retinanet = retinanet.to(hyper_params["device"])
 
 cb = Callback(project_name, experiment_name, hyper_params, hyper_params["save_dir"])

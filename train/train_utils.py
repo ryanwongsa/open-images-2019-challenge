@@ -15,7 +15,7 @@ def save_components(model, optimizer, scheduler, save_dir):
         
     if save_dir != None:
         print("Saving checkpoint to:", save_dir)
-        make_save_dir(save_dir)
+        make_save_dir(''.join(save_dir.split('/')[:-1]))
         if torch.cuda.device_count() > 1:
             torch.save({
                 "model": model.module.state_dict(),
