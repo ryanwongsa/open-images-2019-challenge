@@ -1,7 +1,7 @@
 {
     "projectconfig":{
         "project_name":"gatletag/ObjectDetectionVM",
-        "experiment_name": "humanlabels"  
+        "experiment_name": "humanlabels-cyclic"  
     },
     "dirparams": {
         "train_images_dir": "dataset/train",
@@ -36,12 +36,9 @@
         "IoU_pos":0.5,
         "regress_factor": [0.1, 0.1, 0.2, 0.2],
 
-        "lr": 0.001,
-        "min_lr": 0.000001,
-        "patience": 100,
-        "decay_factor": 0.3,
+        "lr": 0.0001,
 
-        "epochs": 1,
+        "epochs": 5,
         "checkpoint_dir": "temp_human_labels/final.pth",
         "save_dir": "temp_human_labels2",
         "fine_tune": false,
