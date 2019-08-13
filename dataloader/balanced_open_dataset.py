@@ -7,20 +7,26 @@ import json
 from pathlib import Path
 import torch
 import pickle
+from numpy.random import choice
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-class FinalOpenDataset(Dataset):
-    def __init__(self, images_dir, bbox_dir, idx_to_id_dir, clsids_to_idx, transform):
+class BalancedOpenDataset(Dataset):
+    def __init__(self, images_dir, bbox_dir, dict_clsid_to_list_imgs_dir, dict_distributions_dir, clsids_to_idx, num_items, transform):
         self.images_dir = Path(images_dir)
         self.transform = transform
         self.bbox_dir = bbox_dir
         
-        self.idx_to_id = json.load(open(idx_to_id_dir,'r'))
+        self.dict_clsid_to_list_imgs = json.load(open(dict_clsid_to_list_imgs_dir,'r'))
+        self.dict_distributions = json.load(open(dict_distributions_dir,'r'))
+        
+        self.list_of_candidates = list(self.dict_distributions.keys())
+        self.probability_distribution = list(self.dict_distributions.values())
+
         self.annotations = json.loads(open(bbox_dir,'r').read())
 
         self.clsids_to_idx = clsids_to_idx
-        self.num_items = len(self.idx_to_id)
+        self.num_items = num_items
             
     def image_path(self, image_id):
         image_name = image_id+'.jpg'
@@ -59,7 +65,8 @@ class FinalOpenDataset(Dataset):
         return self.num_items
 
     def __getitem__(self, idx):
-        img_id = self.idx_to_id[str(idx)]
+        draw = choice(self.list_of_candidates, p=self.probability_distribution)
+        img_id = choice(self.dict_clsid_to_list_imgs[draw])
         img, anno = self.load_image_anno(img_id)
         img, anno = self.transform(img, anno)
         return img_id, img, anno
@@ -85,13 +92,15 @@ class FinalOpenDataset(Dataset):
                     labels[i,:len(lbls)] = torch.tensor(lbls)
         return img_ids, imgs, (bboxes,labels)
 
-def get_dataloader(images_dir, bbox_dir, idx_to_id_dir, clsids_to_idx,
+def get_balanced_dataloader(images_dir, bbox_dir, dict_clsid_to_list_imgs_dir, dict_distributions_dir, clsids_to_idx, num_items,
         transform_fn, batch_size, shuffle, num_workers, drop_last):
     dataset = FinalOpenDataset(
         images_dir, 
         bbox_dir, 
-        idx_to_id_dir, 
+        dict_clsid_to_list_imgs_dir,
+        dict_distributions_dir,
         clsids_to_idx, 
+        num_items,
         transform_fn
     )
 
