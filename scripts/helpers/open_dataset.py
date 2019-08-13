@@ -14,9 +14,9 @@ class OpenDataset(Dataset):
         self.images_dir = Path(images_dir)
         self.transform = transform
         self.bbox_dir = bbox_dir
-        self.idx_to_id = pickle.load(open(idx_to_id_dir,'rb'))
-        self.clsids_to_names = pickle.load(open(clsids_to_names_dir,'rb'))
-        self.clsids_to_idx = pickle.load(open(clsids_to_idx_dir,'rb'))
+        self.idx_to_id = json.load(open(idx_to_id_dir,'rb'))
+        self.clsids_to_names = json.load(open(clsids_to_names_dir,'r'))
+        self.clsids_to_idx = json.load(open(clsids_to_idx_dir,'r'))
 
         self.idx_to_cls_ids = {v: k for k, v in self.clsids_to_idx.items()}
         self.idx_to_names = {k: self.clsids_to_names[v] for k, v in self.idx_to_cls_ids.items()}
@@ -78,7 +78,7 @@ class OpenDataset(Dataset):
         return self.num_items
 
     def __getitem__(self, idx):
-        img_id = self.idx_to_id[idx]
+        img_id = self.idx_to_id[str(idx)]
         img, anno = self.load_image_anno(img_id)
         img, anno = self.transform(img, anno)
 

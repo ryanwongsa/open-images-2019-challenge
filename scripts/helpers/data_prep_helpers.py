@@ -24,11 +24,11 @@ def prepare_dataset(info_dir):
 
 def save_data_format(json_r, idx_to_id, name, save_dir):
     json_r.to_json(save_dir+"/"+name+"-anno.json", orient="columns")
-    with open(save_dir+"/"+name+'-idx_to_id.pkl', 'wb') as handle:
-        pickle.dump(idx_to_id, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(save_dir+"/"+name+'-idx_to_id.json', 'w') as handle:
+        json.dump(idx_to_id, handle)
     
 def load_data_format(name, loc_dir):
-    idx_to_id = pickle.load(open(loc_dir+"/"+name+'-idx_to_id.pkl','rb'))
+    idx_to_id = json.load(open(loc_dir+"/"+name+'-idx_to_id.json','r'))
     json_r = json.loads(open(loc_dir+"/"+name+"-anno.json",'r').read())
     return json_r, idx_to_id
 
@@ -42,15 +42,15 @@ def make_class_descriptions(descriptions_dir, save_dir):
     df_classes = df_classes.append(df2)
     df_classes = df_classes.set_index(0)
     
-    with open(save_dir+"/"+'clsids_to_names.pkl', 'wb') as handle:
-        pickle.dump(df_classes.to_dict()[1], handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(save_dir+"/"+'clsids_to_names.json', 'w') as handle:
+        json.dump(df_classes.to_dict()[1], handle)
         
     df_classes = pd.read_csv(descriptions_dir, header=None)
     
     dict_classes_to_ids = dict((y,x+1) for x,y in df_classes.to_dict()[0].items())
     dict_classes_to_ids["background"] = 0
-    with open(save_dir+"/"+'clsids_to_idx.pkl', 'wb') as handle:
-        pickle.dump(dict_classes_to_ids, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(save_dir+"/"+'clsids_to_idx.json', 'w') as handle:
+        json.dump(dict_classes_to_ids, handle)
         
 def prepare_data_files_prepare(folder_dataset, bbox_dir, file_name):
     data_info_loc = folder_dataset+"/"+"annotations"
@@ -65,5 +65,5 @@ def prepare_test_data(data_dir, save_dir, file_name):
         dict_idx_to_id[i] = file_loc.stem
 
     make_save_dir(save_dir)
-    with open(save_dir+"/"+file_name+'-idx_to_id.pkl', 'wb') as handle:
-            pickle.dump(dict_idx_to_id, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(save_dir+"/"+file_name+'-idx_to_id.json', 'w') as handle:
+        json.dump(dict_idx_to_id, handle)
