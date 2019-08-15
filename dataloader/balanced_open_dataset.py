@@ -7,21 +7,26 @@ import json
 from pathlib import Path
 import torch
 import pickle
-from numpy.random import choice
+import numpy as np
+import os
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class BalancedOpenDataset(Dataset):
-    def __init__(self, images_dir, bbox_dir, dict_clsid_to_list_imgs_dir, dict_distributions_dir, clsids_to_idx, num_items, transform):
+    def __init__(self, images_dir, bbox_dir, dict_clsid_to_list_imgs_dir, dict_distributions, clsids_to_idx, num_items, transform):
         self.images_dir = Path(images_dir)
         self.transform = transform
         self.bbox_dir = bbox_dir
         
         self.dict_clsid_to_list_imgs = json.load(open(dict_clsid_to_list_imgs_dir,'r'))
-        self.dict_distributions = json.load(open(dict_distributions_dir,'r'))
+        self.dict_distributions = dict_distributions
         
-        self.list_of_candidates = list(self.dict_distributions.keys())
-        self.probability_distribution = list(self.dict_distributions.values())
+#         self.list_of_candidates = list(self.dict_distributions.keys())
+#         self.probability_distribution = list(self.dict_distributions.values())
+        
+        self.list_of_candidates, self.probability_distribution = zip(*self.dict_distributions.items()) 
+        self.probability_distribution = list(self.probability_distribution)
+        self.list_of_candidates = list(self.list_of_candidates)
 
         self.annotations = json.loads(open(bbox_dir,'r').read())
 
@@ -65,8 +70,11 @@ class BalancedOpenDataset(Dataset):
         return self.num_items
 
     def __getitem__(self, idx):
-        draw = choice(self.list_of_candidates, p=self.probability_distribution)
-        img_id = choice(self.dict_clsid_to_list_imgs[draw])
+#         print(self.list_of_candidates)
+#         print(self.probability_distribution)
+        draw = np.random.choice(self.list_of_candidates, p=self.probability_distribution)
+        print(draw)
+        img_id = np.random.choice(self.dict_clsid_to_list_imgs[draw])
         img, anno = self.load_image_anno(img_id)
         img, anno = self.transform(img, anno)
         return img_id, img, anno
@@ -91,14 +99,18 @@ class BalancedOpenDataset(Dataset):
                     bboxes[i,:len(lbls)] = torch.tensor(bbs)
                     labels[i,:len(lbls)] = torch.tensor(lbls)
         return img_ids, imgs, (bboxes,labels)
+    
+    def init_workers_fn(self, worker_id):
+        new_seed = int.from_bytes(os.urandom(4), byteorder='little')
+        np.random.seed(new_seed)
 
-def get_balanced_dataloader(images_dir, bbox_dir, dict_clsid_to_list_imgs_dir, dict_distributions_dir, clsids_to_idx, num_items,
+def get_balanced_dataloader(images_dir, bbox_dir, dict_clsid_to_list_imgs_dir, dict_distributions, clsids_to_idx, num_items,
         transform_fn, batch_size, shuffle, num_workers, drop_last):
-    dataset = FinalOpenDataset(
+    dataset = BalancedOpenDataset(
         images_dir, 
         bbox_dir, 
         dict_clsid_to_list_imgs_dir,
-        dict_distributions_dir,
+        dict_distributions,
         clsids_to_idx, 
         num_items,
         transform_fn
@@ -110,7 +122,8 @@ def get_balanced_dataloader(images_dir, bbox_dir, dict_clsid_to_list_imgs_dir, d
         num_workers= num_workers, 
         collate_fn= dataset.collate_fn,
         pin_memory= True, 
-        drop_last = drop_last
+        drop_last = drop_last,
+        worker_init_fn=dataset.init_workers_fn
     )
 
     return dataloader

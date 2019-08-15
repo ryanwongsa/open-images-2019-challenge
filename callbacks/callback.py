@@ -86,6 +86,7 @@ def aps_img(dict_aps):
     ax.invert_yaxis() 
     ax.set_xlabel('AP')
     ax.set_title('mAp')
+    ax.set_xlim([0, 1])
     plt.tight_layout()
     canvas.draw()
     width, height = fig.get_size_inches() * fig.get_dpi()
