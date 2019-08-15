@@ -87,14 +87,21 @@ class FocalLoss(nn.Module):
                 regression_losses.append(torch.tensor(0).float().to(self.device))
                 classification_losses.append(torch.tensor(0).float().to(self.device))
                 continue
-       
-            bkgrd_indices, positive_indices, IoU_argmax = anchor_indices(target_bbox, anchor, self.IoU_bkgrd, self.IoU_pos)
+            
+            # NOTE only works if the image only has background classes
+            isBackgroundImg = False
+            if (target_labels[j][target_labels[j] == 0].shape[0] > 0): 
+                bkgrd_indices, positive_indices, IoU_argmax = anchor_indices(target_bbox, anchor, 0.2, 0.9) # MIGHT NEED TO CHANGE THIS 0.2, 0.9)
+                isBackgroundImg = True
+            else:
+                bkgrd_indices, positive_indices, IoU_argmax = anchor_indices(target_bbox, anchor, self.IoU_bkgrd, self.IoU_pos)
+                
             num_positive_anchors = positive_indices.sum()
             
             cls_loss = self.classification_loss(classification, bkgrd_indices, positive_indices, IoU_argmax, target_label)
             classification_losses.append(cls_loss.sum()/torch.clamp(num_positive_anchors.float(), min=1.0))
             
-            if positive_indices.sum() > 0:
+            if positive_indices.sum() > 0 and isBackgroundImg == False:
                 regression_loss = self.regression_loss(regression, positive_indices, IoU_argmax, target_bbox, anchor_ctr_wh)
                 regression_losses.append(regression_loss.mean())
             else:

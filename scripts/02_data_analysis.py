@@ -53,32 +53,34 @@ for img_ids, imgs, (target_bboxes, target_labels) in tqdm(dataloader):
     target_bbox = target_bboxes[0]
     target_label = target_labels[0]
     img_id = img_ids[0]
-    
-    iou_bboxes = box_iou(target_bbox, target_bbox)
-    
-    target_width = (target_bbox[:,2]-target_bbox[:,0])
-    target_height = (target_bbox[:,3]-target_bbox[:,1])
-    target_area = target_width * target_height / IMG_DIM**2
-    target_aspect_ratio = (target_width/target_height)
+    if len(target_bbox)==0 or target_label[target_label == 0].shape[0] > 0:
+        dict_label_info["background"].imgs.append(img_id)
+    else:
+        iou_bboxes = box_iou(target_bbox, target_bbox)
 
-    target_aspect_ratio = target_aspect_ratio.numpy()
-    target_area = target_area.numpy()
-    target_label = target_label.numpy()
-    for i in range(len(target_bbox)):
-        label = dataset.idx_to_names[target_label[i]]
-        dict_label_info[label].aspect_ratios.append(target_aspect_ratio[i])
-        dict_label_info[label].areas.append(target_area[i])
-        dict_label_info[label].class_counter +=1
-        
-        dict_label_info[label].imgs.append(img_id)
-        
-        iou_bboxes_i = iou_bboxes[i]
-        for j in range(len(iou_bboxes_i)):
-            label_match = dataset.idx_to_names[target_label[j]]
-            if label!=label_match:
-                iou_j = float(iou_bboxes_i[j])
-                if iou_j > 0:
-                    dict_label_info[label].dict_iou_class[label_match].append(iou_j)
+        target_width = (target_bbox[:,2]-target_bbox[:,0])
+        target_height = (target_bbox[:,3]-target_bbox[:,1])
+        target_area = target_width * target_height / IMG_DIM**2
+        target_aspect_ratio = (target_width/target_height)
+
+        target_aspect_ratio = target_aspect_ratio.numpy()
+        target_area = target_area.numpy()
+        target_label = target_label.numpy()
+        for i in range(len(target_bbox)):
+            label = dataset.idx_to_names[target_label[i]]
+            dict_label_info[label].aspect_ratios.append(target_aspect_ratio[i])
+            dict_label_info[label].areas.append(target_area[i])
+            dict_label_info[label].class_counter +=1
+
+            dict_label_info[label].imgs.append(img_id)
+
+            iou_bboxes_i = iou_bboxes[i]
+            for j in range(len(iou_bboxes_i)):
+                label_match = dataset.idx_to_names[target_label[j]]
+                if label!=label_match:
+                    iou_j = float(iou_bboxes_i[j])
+                    if iou_j > 0:
+                        dict_label_info[label].dict_iou_class[label_match].append(iou_j)
                     
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
