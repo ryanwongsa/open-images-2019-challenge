@@ -91,7 +91,7 @@ class FocalLoss(nn.Module):
             # NOTE only works if the image only has background classes
             isBackgroundImg = False
             if (target_labels[j][target_labels[j] == 0].shape[0] > 0): 
-                bkgrd_indices, positive_indices, IoU_argmax = anchor_indices(target_bbox, anchor, 0.2, 0.9) # MIGHT NEED TO CHANGE THIS 0.2, 0.9)
+                bkgrd_indices, positive_indices, IoU_argmax = anchor_indices(target_bbox, anchor, self.IoU_bkgrd, self.IoU_pos) # MIGHT NEED TO CHANGE THIS 0.2, 0.9)
                 isBackgroundImg = True
             else:
                 bkgrd_indices, positive_indices, IoU_argmax = anchor_indices(target_bbox, anchor, self.IoU_bkgrd, self.IoU_pos)

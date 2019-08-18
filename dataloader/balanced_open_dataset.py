@@ -70,10 +70,7 @@ class BalancedOpenDataset(Dataset):
         return self.num_items
 
     def __getitem__(self, idx):
-#         print(self.list_of_candidates)
-#         print(self.probability_distribution)
         draw = np.random.choice(self.list_of_candidates, p=self.probability_distribution)
-        print(draw)
         img_id = np.random.choice(self.dict_clsid_to_list_imgs[draw])
         img, anno = self.load_image_anno(img_id)
         img, anno = self.transform(img, anno)

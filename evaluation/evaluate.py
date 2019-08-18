@@ -1,9 +1,10 @@
-from tqdm import tqdm
+from tqdm import tqdm_notebook as tqdm
 from torchvision.ops.boxes import batched_nms, nms
 from utils.utils import make_save_dir
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
+from collections import defaultdict
 
 def calcMAp(average_precisions, num_classes, idx_to_names):
     mean_sum = 0
@@ -25,16 +26,19 @@ def compute_ap(precision, recall):
     ap = np.sum((recall[idx + 1] - recall[idx]) * precision[idx + 1])
     return ap
 
-def support_evaluate_model(model, dl, inferencer, vis, cls_thresh, overlap, device, save_dir, display, create_result):
+def support_evaluate_model(model, dl, inferencer, vis, cls_thresh, overlap, device, save_dir, display, create_result, list_results_dict):
     
-    list_results = []
+#     list_results = []
+    
     
     if save_dir != None:
         make_save_dir(save_dir+"/images")
     model.eval()
     with torch.no_grad():
-        for img_ids, imgs, (bboxes, labels) in tqdm(dl):
-            imgs, bboxes, labels = imgs.to(device), bboxes.to(device), labels.to(device)
+#         for img_ids, imgs, (bboxes, labels) in tqdm(dl):
+#             imgs, bboxes, labels = imgs.to(device), bboxes.to(device), labels.to(device)
+        for img_ids, imgs in tqdm(dl):
+            imgs = imgs.to(device)
             batch_size, channels, height, width = imgs.shape
             classifications, regressions, anchors = model(imgs)
             list_transformed_anchors, list_classifications, list_scores = inferencer(imgs, classifications, regressions, anchors, cls_thresh=cls_thresh)
@@ -68,16 +72,25 @@ def support_evaluate_model(model, dl, inferencer, vis, cls_thresh, overlap, devi
                         img_aligned_bboxes[3] = img_bboxes[i][3]/height
 
                         res[1].append([inferencer.idx_to_cls_ids[img_clses[i]],scores[i],img_aligned_bboxes])
-                    list_results.append(res)
+                        list_results_dict[img_ids[index]].append([inferencer.idx_to_cls_ids[img_clses[i]],scores[i],img_aligned_bboxes])
+#                     list_results.append(res)
+                    
 
                 if display==True:
-                    fig, ax = plt.subplots(1,2, figsize=(20,20))
-                    vis.show_img_anno(ax[0], imgs[index].cpu(), ( pred_bboxes.detach().cpu(),  pred_clses.cpu()), pred_scores.detach().cpu())
-                    vis.show_img_anno(ax[1], imgs[index].cpu(), ( bboxes[index].cpu(), labels[index].cpu()))
-                    ax[0].axis('off')
-                    ax[1].axis('off')
-                    plt.tight_layout()
-                    fig.savefig(save_dir+"/images/"+img_ids[index]+".jpg", dpi=fig.dpi)
-                    plt.close()
+                    if len(pred_bboxes)>0:
+                        fig, ax = plt.subplots(1, figsize=(20,20))
+                        vis.show_img_anno(ax, imgs[index].cpu(), ( pred_bboxes.detach().cpu(),  pred_clses.cpu()), pred_scores.detach().cpu())
+                        ax.axis('off')
+                        plt.tight_layout()
+                        fig.savefig(save_dir+"/images/"+img_ids[index]+".jpg", dpi=fig.dpi)
+                        plt.close()
+#                     fig, ax = plt.subplots(1,2, figsize=(20,20))
+#                     vis.show_img_anno(ax[0], imgs[index].cpu(), ( pred_bboxes.detach().cpu(),  pred_clses.cpu()), pred_scores.detach().cpu())
+#                     vis.show_img_anno(ax[1], imgs[index].cpu(), ( bboxes[index].cpu(), labels[index].cpu()))
+#                     ax[0].axis('off')
+#                     ax[1].axis('off')
+#                     plt.tight_layout()
+#                     fig.savefig(save_dir+"/images/"+img_ids[index]+".jpg", dpi=fig.dpi)
+#                     plt.close()
     model.train()                
-    return list_results
+    return list_results_dict
