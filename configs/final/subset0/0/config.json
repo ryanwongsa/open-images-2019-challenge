@@ -1,0 +1,56 @@
+{
+    "projectconfig":{
+        "project_name":"gatletag/Level0Detection",
+        "experiment_name": "subset0"  
+    },
+    "dirparams": {
+        "train_images_dir": "dataset/train",
+        "train_bbox_dir": "data_info/subsets/0/annotations/train-anno.json",
+        "train_dict_clsid_to_list_imgs_dir":"data_info/subsets/0/train_dict_clsid_to_list_imgs.json",
+        "dict_distributions": {
+            "/m/0cyf8": 0.25,
+            "/m/0gj37": 0.25,
+            "/m/0cydv":0.25,
+            "background":0.25
+        },
+        "num_items":10000,
+
+        "valid_images_dir": "dataset/validation",
+        "valid_bbox_dir": "data_info/subsets/0/annotations/valid-anno.json",
+        "valid_idx_to_id_dir": "data_info/subsets/0/annotations/valid-idx_to_id.json",
+
+        "clsids_to_idx_dir": "data_info/subsets/0/clsids_to_idx.json",
+        "clsids_to_names_dir": "data_info/subsets/0/clsids_to_names.json"
+    },
+    "hyperparams": {
+        "num_workers": 8,
+        "device": "cuda",
+
+        "bs": 16,
+        "img_dim": 640,
+
+        "ratios": [0.3333333333, 0.5, 1, 2, 3],
+        "scales": [0.5, 1, 2],
+
+        "backbone": "resnet101",
+        "num_classes": 4,
+        "pretrained": true,
+        "freeze_bn": true,
+
+        "alpha": 0.25,
+        "gamma": 2.0,
+        "IoU_bkgrd":0.4,
+        "IoU_pos":0.5,
+        "regress_factor": [0.1, 0.1, 0.2, 0.2],
+
+        "lr": 0.0001,
+
+        "epochs": 5,
+        "checkpoint_dir": null,
+        "save_dir": "configs/final/subset0/0",
+        "fine_tune": true,
+
+        "cls_thresh":0.10, 
+        "overlap":0.5
+    }
+}
