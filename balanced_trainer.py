@@ -125,16 +125,29 @@ retinanet = retinanet.to(hyper_params["device"])
 
 ## 6. Optimizer
 
-optimizer = optim.SGD(retinanet.parameters(), lr=hyper_params["lr"], momentum=0.9, weight_decay=1e-4)
+if hyper_params["fine_tune"]==True:
+    optimizer = optim.SGD(retinanet.parameters(), lr=hyper_params["lr"], momentum=0.9, weight_decay=1e-4)
+else:
+    optimizer = optim.SGD([
+            {"params": retinanet.fpn.parameters(), "lr": hyper_params["lr"], 'momentum':0.9, 'weight_decay':1e-4},
+            {"params": retinanet.regressionModel.parameters(), "lr": hyper_params["lr"], 'momentum':0.9, 'weight_decay':1e-4},
+            {"params": retinanet.classificationModel.parameters(), "lr": hyper_params["lr"], 'momentum':0.9, 'weight_decay':1e-4},
+            {"params": retinanet.resnet_model.parameters(), "lr": hyper_params["lr"]*0.1, 'momentum':0.9, 'weight_decay':1e-4}
+        ], 
+      lr=hyper_params["lr"], momentum=0.9, weight_decay=1e-4)
+#     optimizer = optim.SGD(retinanet.parameters(), lr=hyper_params["lr"], momentum=0.9, weight_decay=1e-4)
+
+    
 # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
 #         mode='min', 
-#         factor=hyper_params['decay_factor'], 
-#         patience=hyper_params["patience"], 
+#         factor=0.9, 
+#         patience=10, 
 #         verbose=True, 
-#         min_lr=hyper_params["min_lr"]
+#         min_lr=0.000001
 #     )
-scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=hyper_params["lr"], max_lr=hyper_params["lr"]*10,step_size_up=int(len(train_dl)*hyper_params["epochs"]*0.3), step_size_down=int(len(train_dl)*hyper_params["epochs"]*0.7), mode='exp_range')
+# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=hyper_params["lr"], max_lr=hyper_params["lr"]*10,step_size_up=int(len(train_dl)*hyper_params["epochs"]*0.3), step_size_down=int(len(train_dl)*hyper_params["epochs"]*0.7), mode='exp_range')
 
+scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=hyper_params["lr"], max_lr=hyper_params["lr"]*10,step_size_up=int(len(train_dl)*1), step_size_down=int(len(train_dl)*(hyper_params["epochs"]-1)), mode='exp_range')
 
 ## 7. Visualisations
 
