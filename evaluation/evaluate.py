@@ -41,7 +41,7 @@ def support_evaluate_model(model, dl, inferencer, vis, cls_thresh, overlap, devi
             imgs = imgs.to(device)
             batch_size, channels, height, width = imgs.shape
             classifications, regressions, anchors = model(imgs)
-            list_transformed_anchors, list_classifications, list_scores = inferencer(imgs, classifications, regressions, anchors, cls_thresh=cls_thresh)
+            list_transformed_anchors, list_classifications, list_scores = inferencer(imgs, classifications, regressions, anchors[0].unsqueeze(0), cls_thresh=cls_thresh)
             img_bboxes, img_clses, scores= [], [], []
 
             for index in range(batch_size):
@@ -70,9 +70,10 @@ def support_evaluate_model(model, dl, inferencer, vis, cls_thresh, overlap, devi
                         img_aligned_bboxes[1] = img_bboxes[i][1]/height
                         img_aligned_bboxes[2] = img_bboxes[i][2]/width
                         img_aligned_bboxes[3] = img_bboxes[i][3]/height
-
-                        res[1].append([inferencer.idx_to_cls_ids[img_clses[i]],scores[i],img_aligned_bboxes])
-                        list_results_dict[img_ids[index]].append([inferencer.idx_to_cls_ids[img_clses[i]],scores[i],img_aligned_bboxes])
+                        
+                        if inferencer.idx_to_cls_ids[img_clses[i]]!="background":
+                            res[1].append([inferencer.idx_to_cls_ids[img_clses[i]],scores[i],img_aligned_bboxes])
+                            list_results_dict[img_ids[index]].append([inferencer.idx_to_cls_ids[img_clses[i]], scores[i],img_aligned_bboxes])
 #                     list_results.append(res)
                     
 

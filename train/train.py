@@ -129,7 +129,7 @@ class Trainer(object):
 
                     if len(pred_bboxes) != 0 and len(target_bbox) != 0:
                         # -------------------------------
-                        if random.uniform(0, 1) > 1- 1/(len(self.test_dataloader)*1000):
+                        if random.uniform(0, 1) > 1- 1/(len(self.test_dataloader)*batch_size/2):
                             fig, ax = plt.subplots(1,2, figsize=(20,20))
                             canvas = FigureCanvas(fig)
                             self.vis.show_img_anno(ax[0], imgs[index].cpu(), ( pred_bboxes.detach().cpu(),  pred_clses.cpu()), pred_scores.detach().cpu())
