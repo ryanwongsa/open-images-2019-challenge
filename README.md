@@ -23,6 +23,6 @@ Visual Relationship Detection track approach is based on the results of the obje
 
 Due to limited time and resources, for instance segmentation track, I used a pretrained model based on the COCO dataset and mapped the results to matching classes in the Open Images labels.
 
-Training was completed on GCP compute engine instances with different GPUs (1-2 T4 and 1-4 V100 GPUs) based on the network trained. Each model was monitored using neptune.ml. See example neptune.ml architecture below:
+Training was completed on GCP compute engine instances with different GPUs (1-2 T4 and 1-4 V100 GPUs) based on the network trained. Each model was monitored using neptune.ml. See example neptune.ml graphs below:
 
 ![neptune ml](example.JPG)
